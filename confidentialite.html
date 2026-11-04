@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RentaCourse Privacy Policy</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Barlow:wght@400;600&family=Heebo:wght@400;600;700&family=Noto+Sans+Arabic:wght@400;600;700&display=swap">
+<style>
+  /* Version de base (Google Play v1) : même style que docs/confidentialite.html. Rien ne quitte le téléphone. */
+  :root {
+    --bg: #F4F3EF; --surface: #FFFFFF; --fg: #1C2128; --muted: #5B6573; --line: #DAD7CF; --sign: #1A8A4D;
+    --display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+    --body: 'Barlow', 'Segoe UI', Roboto, sans-serif;
+    --hebrew: 'Heebo', 'Arial Hebrew', Arial, sans-serif;
+    --arabic: 'Noto Sans Arabic', Tahoma, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #1C2128; --surface: #262C35; --fg: #F3F1EC; --muted: #A3ADBA; --line: #353D49; --sign: #2BB673; color-scheme: dark } }
+  :root[data-theme="dark"] {
+    --bg: #1C2128; --surface: #262C35; --fg: #F3F1EC; --muted: #A3ADBA; --line: #353D49; --sign: #2BB673; color-scheme: dark }
+  body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 16px; line-height: 1.6; }
+  .wrap { max-width: 720px; margin: 0 auto; padding-block: 32px 64px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  header { display: flex; flex-direction: column; gap: 6px; border-bottom: 3px solid var(--fg); padding-bottom: 18px; }
+  .brand { font-family: var(--display); font-size: 44px; line-height: 1; letter-spacing: .2px; }
+  .sub { color: var(--muted); }
+  nav { display: flex; flex-wrap: wrap; gap: 6px; margin: 20px 0 8px; }
+  nav button { font: 600 15px/1 var(--body); padding: 10px 14px; border-radius: 10px; border: 1.5px solid var(--line);
+    background: var(--surface); color: var(--fg); cursor: pointer; }
+  nav button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  nav button:focus-visible { outline: 3px solid var(--sign); outline-offset: 2px; }
+  article { display: flex; flex-direction: column; gap: 4px; }
+  article[lang="he"] { font-family: var(--hebrew); }
+  article[lang="ar"] { font-family: var(--arabic); }
+  h1 { font-family: var(--display); font-size: 30px; line-height: 1.15; margin: 18px 0 2px; text-wrap: balance; }
+  article[lang="he"] h1, article[lang="ar"] h1 { font-family: inherit; font-weight: 700; }
+  h2 { font-size: 18px; margin: 22px 0 2px; font-weight: 600; text-wrap: balance; }
+  p, li { max-width: 65ch; margin: 4px 0; }
+  ul { padding-inline-start: 22px; margin: 4px 0; }
+  .date { color: var(--muted); font-size: 14px; }
+  .box { background: var(--surface); border: 1px solid var(--line); border-inline-start: 5px solid var(--sign);
+    border-radius: 12px; padding: 12px 16px; margin: 10px 0; }
+  a { color: var(--fg); text-underline-offset: 3px; }
+  .contact { font-weight: 600; user-select: all; }
+  footer { margin-top: 40px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); padding-top: 14px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="brand">RentaCourse</div>
+    <div class="sub">Politique de confidentialité · Privacy Policy · מדיניות פרטיות · سياسة الخصوصية</div>
+  </header>
+
+  <nav aria-label="Langue / Language">
+    <button type="button" id="btn-fr" data-lang="fr">Français</button>
+    <button type="button" id="btn-he" data-lang="he">עברית</button>
+    <button type="button" id="btn-en" data-lang="en">English</button>
+    <button type="button" id="btn-ar" data-lang="ar">العربية</button>
+  </nav>
+
+  <!-- ===================== FRANÇAIS ===================== -->
+  <article id="fr" lang="fr" dir="ltr">
+    <h1>Politique de confidentialité</h1>
+    <p class="date">Dernière mise à jour : 22 octobre 2026</p>
+    <div class="box">En bref : RentaCourse n'a pas de comptes, pas de publicité et pas de traceurs. L'application n'utilise pas ta position. Tout est calculé sur ton téléphone, et tes données y restent : RentaCourse n'a pas de serveur et ne reçoit rien.</div>
+
+    <h2>Qui sommes-nous</h2>
+    <p>RentaCourse est une application Android qui aide les livreurs indépendants à estimer la rentabilité d'une offre de livraison (₪ par heure, ₪ par km). Contact : <span class="contact">algorim259@gmail.com</span>.</p>
+
+    <h2>Ce que l'application utilise</h2>
+    <ul>
+      <li><strong>Capture d'écran</strong> : uniquement quand tu touches la bulle ⚡ ou que tu choisis une capture à scanner. Elle sert à lire le prix, la distance, le nombre d'arrêts et le nom du restaurant affichés dans l'offre. Le texte est lu directement sur ton téléphone.</li>
+      <li><strong>Historique</strong> : prix, temps, ₪/h, verdict et ton choix « prise / passée » pour chaque offre analysée.</li>
+      <li><strong>Réglages</strong> : véhicule, vitesses, seuils du verdict, objectif du jour, langue.</li>
+    </ul>
+
+    <h2>Ce qui reste sur ton téléphone</h2>
+    <p>Tout. L'historique et les réglages sont stockés uniquement sur ton téléphone. Les captures d'écran sont gardées 7 jours au maximum (100 au plus), puis effacées automatiquement.</p>
+
+    <h2>Ce qui est envoyé</h2>
+    <p>Rien de ce que tu analyses. La lecture du texte utilise ML Kit de Google, qui fonctionne sur le téléphone : la capture n'est pas envoyée. ML Kit peut transmettre à Google des informations techniques anonymes (modèle du téléphone, version, performances) pour son bon fonctionnement, selon les <a href="https://developers.google.com/ml-kit/terms" target="_blank" rel="noopener">conditions de ML Kit</a>.</p>
+
+    <h2>Ce que nous ne faisons pas</h2>
+    <p>Pas de vente de données, pas de publicité, pas de traceurs, pas de profilage, pas de position.</p>
+
+    <h2>Adresses des clients</h2>
+    <p>Les captures peuvent contenir l'adresse d'un client. Elles ne quittent jamais ton téléphone et sont effacées après 7 jours au maximum.</p>
+
+    <h2>Tes droits et la suppression</h2>
+    <p>Tu peux tout effacer à tout moment : Réglages → Confidentialité → « Effacer toutes mes données ». Tu peux aussi retirer les autorisations (affichage par-dessus les autres apps, notifications) dans les réglages d'Android, ou désinstaller l'application. Pour toute question sur tes données, y compris au titre de la loi israélienne sur la protection de la vie privée, écris à l'adresse de contact ci-dessus.</p>
+
+    <h2>Âge minimum</h2>
+    <p>RentaCourse s'adresse aux livreurs adultes et n'est pas destinée aux moins de 18 ans.</p>
+
+    <h2>Modifications</h2>
+    <p>Une future version pourra proposer des options en plus (par exemple le trafic réel). Elles seront facultatives, et cette politique sera mise à jour avant. La date en haut de la page indique la dernière modification.</p>
+  </article>
+
+  <!-- ===================== עברית ===================== -->
+  <article id="he" lang="he" dir="rtl" hidden>
+    <h1>מדיניות פרטיות</h1>
+    <p class="date">עדכון אחרון: 22 באוקטובר 2026</p>
+    <div class="box">בקצרה: ל-RentaCourse אין חשבונות, אין פרסומות ואין מעקב. האפליקציה לא משתמשת במיקום שלך. הכול מחושב בטלפון שלך והנתונים נשארים בו: ל-RentaCourse אין שרת והיא לא מקבלת שום דבר.</div>
+
+    <h2>מי אנחנו</h2>
+    <p>RentaCourse היא אפליקציית אנדרואיד שעוזרת לשליחים עצמאיים להעריך את הרווחיות של הצעת משלוח (₪ לשעה, ₪ לק"מ). יצירת קשר: <span class="contact">algorim259@gmail.com</span>.</p>
+
+    <h2>במה האפליקציה משתמשת</h2>
+    <ul>
+      <li><strong>צילום מסך</strong>: רק כשאתה לוחץ על בועת ⚡ או בוחר צילום לסריקה. הוא משמש לקריאת המחיר, המרחק, מספר העצירות ושם המסעדה שמופיעים בהצעה. הטקסט נקרא ישירות בטלפון שלך.</li>
+      <li><strong>היסטוריה</strong>: מחיר, זמן, ₪ לשעה, החלטה והבחירה שלך "לקחתי / דילגתי" לכל הצעה שנבדקה.</li>
+      <li><strong>הגדרות</strong>: כלי רכב, מהירויות, ספי ההחלטה, יעד יומי, שפה.</li>
+    </ul>
+
+    <h2>מה נשאר בטלפון שלך</h2>
+    <p>הכול. ההיסטוריה וההגדרות נשמרות רק בטלפון שלך. צילומי המסך נשמרים עד 7 ימים (עד 100), ואז נמחקים אוטומטית.</p>
+
+    <h2>מה נשלח</h2>
+    <p>שום דבר ממה שאתה בודק. קריאת הטקסט משתמשת ב-ML Kit של גוגל, שפועל בטלפון: צילום המסך לא נשלח. ML Kit עשוי לשלוח לגוגל מידע טכני אנונימי (דגם הטלפון, גרסה, ביצועים) לצורך פעולתו, לפי <a href="https://developers.google.com/ml-kit/terms" target="_blank" rel="noopener">התנאים של ML Kit</a>.</p>
+
+    <h2>מה אנחנו לא עושים</h2>
+    <p>אין מכירת נתונים, אין פרסומות, אין מעקב, אין פרופיילינג, אין מיקום.</p>
+
+    <h2>כתובות לקוחות</h2>
+    <p>צילומי המסך עשויים לכלול כתובת של לקוח. הם אף פעם לא יוצאים מהטלפון שלך ונמחקים אחרי 7 ימים לכל היותר.</p>
+
+    <h2>הזכויות שלך ומחיקה</h2>
+    <p>אפשר למחוק הכול בכל עת: הגדרות ← פרטיות ← "מחק את כל הנתונים שלי". אפשר גם לבטל הרשאות (הצגה מעל אפליקציות אחרות, התראות) בהגדרות אנדרואיד, או להסיר את האפליקציה. לכל שאלה על הנתונים שלך, כולל לפי חוק הגנת הפרטיות, כתוב לכתובת יצירת הקשר שלמעלה.</p>
+
+    <h2>גיל מינימלי</h2>
+    <p>RentaCourse מיועדת לשליחים בגירים ואינה מיועדת למי שמתחת לגיל 18.</p>
+
+    <h2>שינויים</h2>
+    <p>גרסה עתידית עשויה להציע אפשרויות נוספות (למשל תנועה בזמן אמת). הן יהיו לא חובה, והמדיניות תעודכן לפני כן. התאריך בראש העמוד מציין את השינוי האחרון.</p>
+  </article>
+
+  <!-- ===================== ENGLISH ===================== -->
+  <article id="en" lang="en" dir="ltr" hidden>
+    <h1>Privacy Policy</h1>
+    <p class="date">Last updated: October 22, 2026</p>
+    <div class="box">In short: RentaCourse has no accounts, no ads and no trackers. The app does not use your location. Everything is calculated on your phone, and your data stays there: RentaCourse has no server and receives nothing.</div>
+
+    <h2>Who we are</h2>
+    <p>RentaCourse is an Android app that helps independent couriers estimate how profitable a delivery offer is (₪ per hour, ₪ per km). Contact: <span class="contact">algorim259@gmail.com</span>.</p>
+
+    <h2>What the app uses</h2>
+    <ul>
+      <li><strong>Screenshot</strong>: only when you tap the ⚡ bubble or pick a screenshot to scan. It is used to read the price, distance, number of stops and restaurant name shown in the offer. The text is read directly on your phone.</li>
+      <li><strong>History</strong>: price, time, ₪/h, verdict and your "taken / skipped" choice for each analyzed offer.</li>
+      <li><strong>Settings</strong>: vehicle, speeds, verdict thresholds, daily goal, language.</li>
+    </ul>
+
+    <h2>What stays on your phone</h2>
+    <p>Everything. History and settings are stored only on your phone. Screenshots are kept for 7 days at most (100 at most), then deleted automatically.</p>
+
+    <h2>What is sent</h2>
+    <p>Nothing you analyze. Text reading uses Google's ML Kit, which runs on the phone: the screenshot is not sent. ML Kit may send Google anonymous technical information (phone model, version, performance) to work properly, under the <a href="https://developers.google.com/ml-kit/terms" target="_blank" rel="noopener">ML Kit terms</a>.</p>
+
+    <h2>What we don't do</h2>
+    <p>No selling of data, no ads, no trackers, no profiling, no location.</p>
+
+    <h2>Customer addresses</h2>
+    <p>Screenshots may contain a customer's address. They never leave your phone and are deleted after 7 days at most.</p>
+
+    <h2>Your rights and deletion</h2>
+    <p>You can delete everything at any time: Settings → Privacy → "Delete all my data". You can also remove permissions (display over other apps, notifications) in Android settings, or uninstall the app. For any question about your data, including under Israel's Protection of Privacy Law, write to the contact address above.</p>
+
+    <h2>Minimum age</h2>
+    <p>RentaCourse is meant for adult couriers and is not intended for anyone under 18.</p>
+
+    <h2>Changes</h2>
+    <p>A future version may offer extra options (for example live traffic). They will be optional, and this policy will be updated first. The date at the top shows the latest change.</p>
+  </article>
+
+  <!-- ===================== العربية ===================== -->
+  <article id="ar" lang="ar" dir="rtl" hidden>
+    <h1>سياسة الخصوصية</h1>
+    <p class="date">آخر تحديث: 22 أكتوبر 2026</p>
+    <div class="box">باختصار: لا يوجد في RentaCourse حسابات ولا إعلانات ولا تتبّع. التطبيق لا يستخدم موقعك. كل شيء يُحسب على هاتفك وبياناتك تبقى عليه: لا يملك RentaCourse خادماً ولا يتلقى أي شيء.</div>
+
+    <h2>من نحن</h2>
+    <p>RentaCourse تطبيق أندرويد يساعد عمّال التوصيل المستقلين على تقدير ربحية عرض التوصيل (₪ للساعة، ₪ للكيلومتر). للتواصل: <span class="contact">algorim259@gmail.com</span>.</p>
+
+    <h2>ما يستخدمه التطبيق</h2>
+    <ul>
+      <li><strong>صورة الشاشة</strong>: فقط عند الضغط على فقاعة ⚡ أو اختيار صورة للمسح. تُستخدم لقراءة السعر والمسافة وعدد المحطات واسم المطعم الظاهرة في العرض. يُقرأ النص مباشرة على هاتفك.</li>
+      <li><strong>السجل</strong>: السعر والوقت و₪ للساعة والنتيجة واختيارك "قبلت / تخطيت" لكل عرض.</li>
+      <li><strong>الإعدادات</strong>: وسيلة النقل، السرعات، حدود النتيجة، الهدف اليومي، اللغة.</li>
+    </ul>
+
+    <h2>ما يبقى على هاتفك</h2>
+    <p>كل شيء. السجل والإعدادات محفوظة على هاتفك فقط. تُحفظ صور الشاشة 7 أيام كحد أقصى (100 صورة كحد أقصى) ثم تُحذف تلقائياً.</p>
+
+    <h2>ما يُرسل</h2>
+    <p>لا شيء مما تحلله. تستخدم قراءة النص ML Kit من جوجل، الذي يعمل على الهاتف: لا تُرسل صورة الشاشة. قد يرسل ML Kit إلى جوجل معلومات تقنية بدون هوية (طراز الهاتف، الإصدار، الأداء) ليعمل بشكل صحيح، وفق <a href="https://developers.google.com/ml-kit/terms" target="_blank" rel="noopener">شروط ML Kit</a>.</p>
+
+    <h2>ما لا نفعله</h2>
+    <p>لا بيع للبيانات، لا إعلانات، لا تتبّع، لا تنميط، لا موقع.</p>
+
+    <h2>عناوين الزبائن</h2>
+    <p>قد تحتوي صور الشاشة على عنوان زبون. لا تغادر هاتفك أبداً وتُحذف بعد 7 أيام كحد أقصى.</p>
+
+    <h2>حقوقك والحذف</h2>
+    <p>يمكنك حذف كل شيء في أي وقت: الإعدادات ← الخصوصية ← "احذف كل بياناتي". يمكنك أيضاً سحب الأذونات (العرض فوق التطبيقات الأخرى، الإشعارات) من إعدادات أندرويد، أو حذف التطبيق. لأي سؤال عن بياناتك، بما في ذلك وفق قانون حماية الخصوصية الإسرائيلي، راسلنا على عنوان التواصل أعلاه.</p>
+
+    <h2>الحد الأدنى للعمر</h2>
+    <p>RentaCourse مخصص لعمّال التوصيل البالغين وليس لمن هم دون 18 عاماً.</p>
+
+    <h2>التعديلات</h2>
+    <p>قد يقدّم إصدار مستقبلي خيارات إضافية (مثل حركة المرور الحية). ستكون اختيارية، وستُحدَّث هذه السياسة قبل ذلك. يشير التاريخ أعلى الصفحة إلى آخر تعديل.</p>
+  </article>
+
+  <footer>RentaCourse · 2026</footer>
+</div>
+
+<script>
+  (function () {
+    var langs = ['fr', 'he', 'en', 'ar'];
+    function show(lang) {
+      if (langs.indexOf(lang) < 0) lang = 'fr';
+      langs.forEach(function (l) {
+        document.getElementById(l).hidden = l !== lang;
+        document.getElementById('btn-' + l).setAttribute('aria-pressed', String(l === lang));
+      });
+    }
+    document.querySelectorAll('nav button').forEach(function (b) {
+      b.addEventListener('click', function () { show(b.getAttribute('data-lang')); });
+    });
+    var nav = ((navigator.language || 'fr').slice(0, 2)).replace('iw', 'he');
+    show((location.hash || '').replace('#', '') || nav);
+  })();
+</script>
+
+</body>
+</html>
