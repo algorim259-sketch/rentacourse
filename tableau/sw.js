@@ -1,6 +1,6 @@
 // Permet d'ouvrir le tableau de bord sans connexion.
 // La météo (api.open-meteo.com) n'est jamais mise en cache ici.
-const CACHE = 'tableau-v3';
+const CACHE = 'tableau-v6';
 const FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
