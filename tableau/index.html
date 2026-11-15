@@ -127,6 +127,17 @@ svg { stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; 
 .next small { display: block; color: var(--muted); font-size: 13px; }
 
 /* ============ HABITUDES ============ */
+.item.wrap { flex-wrap: wrap; }
+.counter { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 0 8px 12px 12px; }
+.counter b { flex-basis: 100%; font-size: 16px; }
+.counter button { flex: 1; min-width: 0; min-height: 46px; border-radius: 12px; border: 1px solid var(--line); background: transparent; font-weight: 700; font-size: 16px; }
+.counter .bar { flex-basis: 100%; }
+textarea { width: 100%; min-height: 84px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); font: inherit; color: inherit; resize: vertical; }
+textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.fieldlabel { font-size: 14px; color: var(--muted); font-weight: 600; margin-bottom: -4px; }
+.mrow .top { display: flex; justify-content: space-between; gap: 10px; font-size: 15px; margin-bottom: 6px; }
+.rule { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.rule:last-child { border-bottom: 0; }
 .dots { display: flex; gap: 5px; flex: none; padding-right: 10px; }
 .dots i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--line); display: block; }
 .dots i.on { background: var(--accent); border-color: var(--accent); }
@@ -419,7 +430,8 @@ function defaultState() {
       { id: 'rentacourse', name: 'RentaCourse', steps: SEED_GOALS.rentacourse.map(([text, l, d]) => ({ id: uid(), text, len: l === 'l' ? 'long' : 'court', done: !!d })) },
       { id: 'dofus', name: 'Serveur Dofus', steps: SEED_GOALS.dofus.map(([text, l, d]) => ({ id: uid(), text, len: l === 'l' ? 'long' : 'court', done: !!d })) }
     ],
-    habits: [{ id: uid(), name: 'Prière du matin' }, { id: uid(), name: '20 pompes' }, { id: uid(), name: 'Moment avec les enfants' }],
+    habits: [{ id: uid(), name: 'Prière du matin' }, { id: uid(), name: '20 pompes', kind: 'pompes', goal: 20 }, { id: uid(), name: 'Moment avec les enfants', kind: 'enfants' }],
+    counts: {}, fam: { days: {}, weeks: {}, months: {} }, kids: ['', ''],
     habitLog: {}, ideas: {}, generated: {}, dayOverrides: {}, recent: {},
     settings: { night: 'auto' }, lastExport: null
   };
@@ -434,6 +446,16 @@ function normalize(o) {
   if (!Array.isArray(s.habits)) s.habits = [];
   for (const k of ['habitLog', 'ideas', 'generated', 'dayOverrides', 'recent', 'settings']) if (!s[k] || typeof s[k] !== 'object') s[k] = {};
   if (!s.settings.night) s.settings.night = 'auto';
+  if (!s.counts || typeof s.counts !== 'object') s.counts = {};
+  if (!s.fam || typeof s.fam !== 'object') s.fam = {};
+  for (const k of ['days', 'weeks', 'months']) if (!s.fam[k] || typeof s.fam[k] !== 'object') s.fam[k] = {};
+  if (!Array.isArray(s.kids)) s.kids = ['', ''];
+  // Anciennes données : reconnaître les pompes et le moment avec les enfants
+  for (const h of s.habits) {
+    if (h.kind) continue;
+    if (/pompe/i.test(h.name)) { h.kind = 'pompes'; h.goal = +((h.name.match(/\d+/) || [20])[0]) || 20; }
+    else if (/enfant/i.test(h.name)) h.kind = 'enfants';
+  }
   return s;
 }
 let storageOK = true;
@@ -726,6 +748,7 @@ function stepEditor(g) {
   return h;
 }
 
+function countOf(date, hid) { return +((state.counts[date] || {})[hid]) || 0; }
 function isDone(date, hid) { return !!(state.habitLog[date] && state.habitLog[date][hid]); }
 function streak(hid, today) {
   let n = 0, d = today;
@@ -746,13 +769,138 @@ function habitsHTML(today) {
       const d = addDays(today, -i), w = wday(d);
       dots += '<i class="' + (isDone(d, hb.id) ? 'on' : (w === 5 || w === 6) ? 'free' : '') + '" title="' + dayName(d) + '"></i>';
     }
-    h += '<li class="item' + '">' +
+    const cnt = hb.goal ? countOf(today, hb.id) : 0;
+    h += '<li class="item' + (hb.goal ? ' wrap' : '') + '">' +
       '<button class="check" data-act="toggleHabit" data-id="' + hb.id + '" aria-pressed="' + done + '" aria-label="' + esc(hb.name) + ' fait aujourd’hui"><span>' + I.check + '</span></button>' +
       '<div class="ttext" style="padding:10px 4px"><span>' + esc(hb.name) + '</span><small class="tag">' + (s ? 'Série : ' + s + ' jour' + (s > 1 ? 's' : '') : 'Pas encore de série') + '</small></div>' +
-      '<div class="dots" aria-hidden="true">' + dots + '</div></li>';
+      '<div class="dots" aria-hidden="true">' + dots + '</div>' +
+      (hb.goal ? '<div class="counter"><b>' + cnt + ' / ' + hb.goal + ' aujourd’hui' + (cnt >= hb.goal ? ' ✓' : '') + '</b>' +
+        [1, 5, 10, 20].map(n => '<button data-act="addCount" data-id="' + hb.id + '" data-n="' + n + '">+' + n + '</button>').join('') +
+        '<button data-act="addCount" data-id="' + hb.id + '" data-n="-1" aria-label="Retirer 1">−1</button>' +
+        '<div class="bar"><i style="width:' + Math.min(100, Math.round(cnt / hb.goal * 100)) + '%"></i></div></div>' : '') +
+      '</li>';
   }
   if (!state.habits.length) h += '<li class="empty">Aucune habitude. Ajoute-en dans les réglages.</li>';
   return h + '</ul><p class="small muted" style="margin-top:8px">Le vendredi et le samedi ne cassent jamais la série.</p></section>';
+}
+
+/* ---------- Ma famille ---------- */
+const FAM_THEMES = [
+  { e: '🙏', t: 'Reconnaissance', d: 'Cette semaine, je remarque et je dis merci.',
+    day: [['noter', 'Noter une chose qu’elle a faite pour la famille', true]],
+    week: [['demander', 'Lui demander ce qui la fait se sentir remerciée'], ['enfants', 'Remercier les enfants pour un effort (ranger, aider, être gentil)'], ['admire', 'Lui dire une chose que j’admire chez elle']] },
+  { e: '🗣️', t: 'Mieux parler', d: 'Cette semaine, je fais attention à mes mots.',
+    day: [['probleme', 'Parler du problème, pas de la personne']],
+    week: [['risque', 'Repérer mes moments à risque (fatigue, retour du travail, matin pressé)'], ['pause', 'Utiliser la pause 2 minutes au moins une fois'], ['excuse', 'M’excuser sans « mais » si j’ai dérapé']] },
+  { e: '🧘', t: 'Patience', d: 'Cette semaine, je prends le temps avant de réagir.',
+    day: [['respirer', 'Respirer 3 fois avant de répondre quand je suis énervé'], ['hauteur', 'Me baisser à la hauteur des enfants pour leur parler']],
+    week: [['repeter', 'Me rappeler : à leur âge, répéter c’est normal'], ['nommer', 'Nommer ce que ressent un enfant (« tu es frustré parce que… »)'], ['finir', 'Laisser ma femme finir ses phrases avant de répondre']] },
+  { e: '⏳', t: 'Temps ensemble', d: 'Cette semaine, ma famille passe en premier.',
+    day: [['tel', 'Pas de téléphone pendant le temps en famille']],
+    week: [['soiree', 'Une soirée en famille sans téléphone'], ['refus', 'Refuser au moins une course qui tombe sur un moment famille'], ['agenda', 'Bloquer mes moments réservés pour le mois suivant']] }
+];
+const FAM_MONTH = [['avis', 'Demander à ma femme : « Qu’est-ce qui a changé ce mois-ci ? »'], ['sortie', 'Une sortie en famille (parc, plage, visite)'], ['agendam', 'Prévoir les moments réservés du mois suivant']];
+const sundayOf = s => addDays(s, -wday(s));
+const famWeekNum = s => Math.round((parse(sundayOf(s)) - parse('2026-11-01')) / 864e5 / 7);
+const famTheme = s => FAM_THEMES[((famWeekNum(s) - 1) % 4 + 4) % 4];
+const kidName = i => ((state.kids || [])[i] || '').trim() || (i === 0 ? 'mon premier enfant' : 'mon deuxième enfant');
+const enfantsHabit = () => state.habits.find(h => h.kind === 'enfants');
+function famDaily(s) {
+  const t = [['merci', 'Un merci précis à ma femme'], ['ecoute', '5 min : écouter sa journée jusqu’au bout'],
+    ['enfants15', '15 min d’histoire ou de jeu avec les enfants'], ['cris', 'Pas de cris ni d’insultes']];
+  if (dayType(s) === 'travail') t.push(['sas', 'Sas de 10 min avant d’entrer à la maison']);
+  return t.concat(famTheme(s).day);
+}
+function famWeekItems(s) {
+  const n = famWeekNum(s);
+  return [n % 2 ? ['kid0', '30 min seul avec ' + kidName(0)] : ['kid1', '30 min seul avec ' + kidName(1)],
+    ['deux', 'Un moment à deux avec ma femme'], ['bilan', 'Faire le bilan de la semaine']];
+}
+function famStore(scope, s) {
+  const f = state.fam, k = scope === 'd' ? s : scope === 'w' ? sundayOf(s) : s.slice(0, 7);
+  const box = scope === 'd' ? f.days : scope === 'w' ? f.weeks : f.months;
+  return box[k] = box[k] || {};
+}
+function famGet(scope, s, id) {
+  const h = enfantsHabit();
+  if (scope === 'd' && id === 'enfants15' && h) return isDone(s, h.id);
+  const f = state.fam, k = scope === 'd' ? s : scope === 'w' ? sundayOf(s) : s.slice(0, 7);
+  const box = scope === 'd' ? f.days : scope === 'w' ? f.weeks : f.months;
+  return !!(box[k] && box[k][id]);
+}
+function famSet(scope, s, id, v) {
+  const h = enfantsHabit();
+  if (scope === 'd' && id === 'enfants15' && h) { const log = state.habitLog[s] = state.habitLog[s] || {}; if (v) log[h.id] = true; else delete log[h.id]; return; }
+  const st = famStore(scope, s); if (v) st[id] = true; else delete st[id];
+}
+function famPct(s) { const l = famDaily(s), n = l.filter(([id]) => famGet('d', s, id)).length; return { n, t: l.length, p: n / l.length }; }
+function famStreak(today) {
+  let n = 0, d = today;
+  for (let i = 0; i < 400; i++) {
+    const w = wday(d);
+    if (famPct(d).p >= 0.8) n++;
+    else if (!(i === 0 || w === 5 || w === 6)) break;
+    d = addDays(d, -1);
+  }
+  return n;
+}
+const famItem = (scope, id, label, on) => '<li class="item' + (on ? ' done' : '') + '"><button class="check" data-act="famToggle" data-scope="' + scope + '" data-id="' + id + '" aria-pressed="' + on + '" aria-label="Cocher"><span>' + I.check + '</span></button><div class="ttext" style="padding:10px 4px"><span>' + esc(label) + '</span></div></li>';
+function famHTML(today) {
+  const th = famTheme(today), { n, t } = famPct(today), st = famStreak(today);
+  const day = state.fam.days[today] || {}, wk = state.fam.weeks[sundayOf(today)] || {};
+  let h = '<section id="famille"><h2>Ma famille</h2><div class="stack">';
+  h += '<div class="card stack" style="gap:6px"><div class="theme">Thème de la semaine</div><h3 style="font-size:19px">' + th.e + ' ' + th.t + '</h3><p class="small muted">' + th.d + '</p></div>';
+  // Aujourd'hui
+  h += '<div><div class="goalhead" style="margin-bottom:8px"><h3>Aujourd’hui</h3><span class="muted small">' + n + ' / ' + t + (st ? ' · série : ' + st + ' j' : '') + '</span></div><ul class="list">';
+  for (const [id, label, note] of famDaily(today)) {
+    h += famItem('d', id, label, famGet('d', today, id));
+    if (note) h += '<li><input type="text" id="famnote" data-famnote="' + id + '" placeholder="Ce qu’elle a fait aujourd’hui…" value="' + esc(day[id + '_txt'] || '') + '"></li>';
+  }
+  h += '</ul><p class="small muted" style="margin-top:8px">Si j’ai mal parlé : « Je t’ai mal parlé, pardon. » Sans « mais ».</p></div>';
+  // Semaine
+  const wItems = famWeekItems(today).concat(th.week);
+  const wDone = wItems.filter(([id]) => famGet('w', today, id)).length;
+  h += '<div><div class="goalhead" style="margin-bottom:8px"><h3>Cette semaine</h3><span class="muted small">' + wDone + ' / ' + wItems.length + '</span></div><ul class="list">' +
+    famWeekItems(today).map(([id, l]) => famItem('w', id, l, famGet('w', today, id))).join('') +
+    '<li class="small muted" style="padding:6px 4px 0">Spécial « ' + th.t + ' »</li>' +
+    th.week.map(([id, l]) => famItem('w', id, l, famGet('w', today, id))).join('') + '</ul></div>';
+  // Bilan
+  const b = wk.bilan_txt || {};
+  h += det('fam-bilan', 'Bilan de la semaine', '<p class="small muted">5 minutes en fin de semaine. Tu peux aussi demander son avis à ta femme.</p>' +
+    [['ok', 'Qu’est-ce qui a bien marché ?'], ['ko', 'Quand ai-je perdu patience ou mal parlé ? Pourquoi ?'], ['next', 'Que vais-je faire différemment ?']]
+      .map(([k, l]) => '<p class="fieldlabel">' + l + '</p><textarea id="bilan-' + k + '" data-fambilan="' + k + '">' + esc(b[k] || '') + '</textarea>').join(''));
+  // Mois
+  const m0 = today.slice(0, 8) + '01', days = [];
+  for (let d = m0; d.slice(0, 7) === m0.slice(0, 7); d = addDays(d, 1)) days.push(d);
+  const work = days.filter(d => wday(d) !== 6), suns = days.filter(d => wday(d) === 0);
+  const cnt = id => work.filter(d => famGet('d', d, id)).length;
+  const wcnt = id => suns.filter(d => famGet('w', d, id)).length;
+  const goals = [
+    ['Jours avec un merci précis', cnt('merci'), Math.round(work.length * 0.85)],
+    ['Jours où je l’ai écoutée', cnt('ecoute'), Math.round(work.length * 0.85)],
+    ['Jours avec 15 min pour les enfants', cnt('enfants15'), Math.round(work.length * 0.85)],
+    ['Jours sans cris ni insultes', cnt('cris'), Math.round(work.length * 0.9)],
+    ['Moments seul avec un enfant', wcnt('kid0') + wcnt('kid1'), suns.length],
+    ['Moments à deux avec ma femme', wcnt('deux'), suns.length],
+    ['Bilans de la semaine faits', wcnt('bilan'), suns.length]
+  ];
+  const monthName = cap(parse(m0).toLocaleDateString('fr-FR', { month: 'long' }));
+  h += det('fam-mois', 'Ce mois-ci (' + monthName + ')', goals.map(([l, v, g]) => '<div class="mrow"><div class="top"><span>' + l + '</span><span class="muted">' + v + ' / ' + g + (v >= g ? ' ✓' : '') + '</span></div><div class="bar"><i style="width:' + Math.min(100, Math.round(v / Math.max(1, g) * 100)) + '%"></i></div></div>').join('') +
+    '<p class="small muted">Ces chiffres se remplissent tout seuls avec tes cases du jour et de la semaine.</p><h3>À faire ce mois-ci</h3><ul class="list">' +
+    FAM_MONTH.map(([id, l]) => famItem('m', id, l, famGet('m', today, id))).join('') + '</ul>');
+  // Règles
+  h += det('fam-regles', 'Mes règles et mes moments réservés',
+    '<div class="rule"><b>Merci précis.</b> Chaque jour, je remercie ma femme pour une chose précise : « Merci d’avoir… ».</div>' +
+    '<div class="rule"><b>Pause 2 minutes.</b> Quand je sens la colère monter, je dis « j’ai besoin de deux minutes » et je reviens calmé.</div>' +
+    '<div class="rule"><b>Excuses sans « mais ».</b> Si j’ai mal parlé, je m’excuse vite et simplement : « Je t’ai mal parlé, pardon. »</div>' +
+    '<div class="rule"><b>Sas après le travail.</b> Avant d’entrer à la maison, 10 minutes pour décompresser : douche, musique, calme.</div>' +
+    '<h3 style="margin-top:8px">Mes moments réservés</h3>' +
+    '<div class="rule"><b>Chaque soir, 15 min</b> · les enfants : histoire ou jeu avant le coucher.</div>' +
+    '<div class="rule"><b>Chaque soir, 5 min</b> · ma femme : « Comment s’est passée ta journée ? » et je l’écoute jusqu’au bout.</div>' +
+    '<div class="rule"><b>1 semaine sur 2, 30 min</b> · seul avec ' + esc(kidName(0)) + ', puis la semaine suivante seul avec ' + esc(kidName(1)) + ' : parc, glace ou jeu de son choix.</div>' +
+    '<div class="rule"><b>1 fois par semaine</b> · ma femme : café, balade ou soirée sans téléphone.</div>' +
+    '<p class="small muted">Ces moments passent avant les courses en plus.</p>');
+  return h + '</div></section>';
 }
 
 function ideasHTML(today) {
@@ -801,6 +949,10 @@ function settingsHTML() {
   for (const hb of state.habits) hab += '<li class="item" style="background:var(--card2)"><button class="ttext" style="padding-left:10px" data-act="editHabit" data-id="' + hb.id + '"><span>' + esc(hb.name) + '</span><small class="tag">Toucher pour renommer</small></button><button class="icon" data-act="delHabit" data-id="' + hb.id + '" aria-label="Supprimer">' + I.trash + '</button></li>';
   hab += '</ul><input type="text" id="addhabit" placeholder="Nouvelle habitude…" enterkeyhint="done"><button class="btn block" data-act="addHabit">+ Ajouter l’habitude</button>';
   h += det('habits', 'Habitudes', hab);
+  h += det('kids', 'Ma famille (prénoms des enfants)', '<p class="small muted">Les prénoms restent seulement sur ton téléphone. Ils servent pour « 30 min seul avec… », une semaine sur deux.</p>' +
+    '<p class="fieldlabel">Premier enfant</p><input type="text" id="kid0" value="' + esc(state.kids[0] || '') + '" placeholder="Prénom">' +
+    '<p class="fieldlabel">Deuxième enfant</p><input type="text" id="kid1" value="' + esc(state.kids[1] || '') + '" placeholder="Prénom">' +
+    '<button class="btn block" data-act="saveKids">Enregistrer les prénoms</button>');
   // Sauvegarde
   const last = state.lastExport ? 'Dernière sauvegarde : ' + new Date(state.lastExport).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : 'Aucune sauvegarde pour l’instant.';
   h += det('backup', 'Sauvegarde', '<p class="small muted">Tes données sont seulement sur ce téléphone. Fais une sauvegarde de temps en temps et garde le fichier (Drive, WhatsApp à toi-même…).</p><p class="small">' + last + '</p>' +
@@ -824,13 +976,13 @@ function render() {
   refreshPlans(today); refreshPlans(tom);
   const evening = t.getHours() >= 18;
   // garder ce qui est en train d'être tapé
-  const typed = {}; document.querySelectorAll('#app input[type=text]').forEach(i => { if (i.value) typed[i.id] = i.value; });
+  const typed = {}; document.querySelectorAll('#app input[type=text], #app textarea').forEach(i => { if (i.value) typed[i.id] = i.value; });
   const focused = document.activeElement && document.activeElement.id;
   let h = headerHTML(t, today, sh);
   if (sh.active && !ui.showShabbat) h += shabbatHTML(sh);
   else {
     if (evening) h += demainHTML(tom);
-    h += tasksHTML(today, tom, evening) + goalsHTML(today) + habitsHTML(today) + ideasHTML(today) + settingsHTML();
+    h += tasksHTML(today, tom, evening) + goalsHTML(today) + habitsHTML(today) + famHTML(today) + ideasHTML(today) + settingsHTML();
   }
   $('#app').innerHTML = h;
   for (const id in typed) { const i = document.getElementById(id); if (i) i.value = typed[id]; }
@@ -1044,8 +1196,25 @@ const ACTS = {
   renameGoal: el => { const g = goalOf(el.dataset.goal); sheet({ title: 'Renommer l’objectif', fields: [{ type: 'text', label: 'Nom', value: g.name }], onSave: ([v]) => { g.name = v; } }); },
   toggleHabit: el => {
     const d = todayStr(); const log = state.habitLog[d] = state.habitLog[d] || {};
-    if (log[el.dataset.id]) delete log[el.dataset.id]; else { log[el.dataset.id] = true; bravo(); }
+    const hb = state.habits.find(x => x.id === el.dataset.id);
+    const c = state.counts[d] = state.counts[d] || {};
+    if (log[el.dataset.id]) { delete log[el.dataset.id]; if (hb && hb.goal) delete c[hb.id]; }
+    else { log[el.dataset.id] = true; if (hb && hb.goal) c[hb.id] = Math.max(countOf(d, hb.id), hb.goal); bravo(); }
   },
+  addCount: el => {
+    const d = todayStr(), hb = state.habits.find(x => x.id === el.dataset.id); if (!hb) return;
+    const before = countOf(d, hb.id), v = Math.max(0, before + (+el.dataset.n));
+    const c = state.counts[d] = state.counts[d] || {}; c[hb.id] = v;
+    const log = state.habitLog[d] = state.habitLog[d] || {};
+    if (v >= hb.goal) log[hb.id] = true; else delete log[hb.id];
+    if (before < hb.goal && v >= hb.goal) bravo();
+  },
+  famToggle: el => {
+    const d = todayStr(), on = !famGet(el.dataset.scope, d, el.dataset.id);
+    famSet(el.dataset.scope, d, el.dataset.id, on);
+    if (on) { if (el.dataset.scope === 'd' && famPct(d).p === 1) toast('✓ Journée parfaite en famille'); else bravo(); }
+  },
+  saveKids: () => { state.kids = [$('#kid0').value.trim(), $('#kid1').value.trim()]; $('#kid0').value = ''; $('#kid1').value = ''; toast('Prénoms enregistrés'); },
   editHabit: el => { const h = state.habits.find(x => x.id === el.dataset.id); sheet({ title: 'Renommer l’habitude', fields: [{ type: 'text', label: 'Habitude', value: h.name }], onSave: ([v]) => { h.name = v; } }); },
   delHabit: el => { const i = state.habits.findIndex(x => x.id === el.dataset.id); const [h] = state.habits.splice(i, 1); toast('Habitude supprimée', () => state.habits.splice(i, 0, h)); },
   addHabit: () => { const inp = $('#addhabit'), v = inp.value.trim(); if (!v) { inp.focus(); return; } state.habits.push({ id: uid(), name: v }); inp.value = ''; toast('Habitude ajoutée'); },
@@ -1105,6 +1274,19 @@ document.addEventListener('keydown', e => {
   if (id === 'addhabit') { ACTS.addHabit(); render(); }
   else if (id === 'addbank') { ACTS.addBank({ dataset: { len: 'court' } }); render(); }
   else if (id.startsWith('addstep-')) { ACTS.addStep({ dataset: { goal: id.slice(8), len: 'long' } }); render(); }
+});
+document.addEventListener('input', e => {
+  const t = e.target, d = todayStr();
+  if (t.dataset.famnote) {
+    const id = t.dataset.famnote, st = famStore('d', d);
+    st[id + '_txt'] = t.value;
+    if (t.value.trim() && !st[id]) { st[id] = true; const b = document.querySelector('[data-act=famToggle][data-id="' + id + '"]'); if (b) { b.setAttribute('aria-pressed', 'true'); b.closest('.item').classList.add('done'); } }
+    save();
+  } else if (t.dataset.fambilan) {
+    const st = famStore('w', d); st.bilan_txt = st.bilan_txt || {}; st.bilan_txt[t.dataset.fambilan] = t.value;
+    if (t.value.trim()) st.bilan = true;
+    save();
+  }
 });
 document.addEventListener('toggle', e => { if (e.target.dataset && e.target.dataset.key) ui.open[e.target.dataset.key] = e.target.open; }, true);
 
