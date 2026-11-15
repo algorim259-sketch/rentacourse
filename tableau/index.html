@@ -286,6 +286,8 @@ summary { font-weight: 800; }
 /* Bandeau de couleur en haut de chaque onglet */
 .hero { color: #fff; border-radius: 26px; padding: 18px; background: linear-gradient(135deg, #10b981 0%, #0ea5e9 100%); box-shadow: 0 12px 30px rgba(14,165,233,.28); display: flex; flex-direction: column; gap: 12px; }
 .hero.poids { background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%); box-shadow: 0 12px 30px rgba(16,185,129,.28); }
+.steps { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; }
+#skill a, #skillday a { color: var(--accent-strong); font-weight: 700; }
 .ptitle { font-size: 30px; font-weight: 900; margin: 6px 2px 2px; }
 .psub { color: var(--muted); margin: 0 2px 4px; font-size: 15px; font-weight: 600; }
 .kpi .e { font-size: 24px; line-height: 1.2; margin-bottom: 4px; }
@@ -1676,25 +1678,72 @@ function skillIndex(today) {
   const w = Math.max(0, Math.round((parse(sundayOf(today)) - parse(state.skill.start)) / 864e5 / 7));
   return (((w + state.skill.offset) % SKILLS.length) + SKILLS.length) % SKILLS.length;
 }
+// Où apprendre chaque skill (sites sérieux et gratuits)
+const SKILL_RES = {
+  claude: [['Centre d’aide de Claude', 'https://support.claude.com'], ['Ton propre projet : RentaCourse', '']],
+  git: [['GitHub Skills (petits cours pratiques)', 'https://skills.github.com'], ['Documentation GitHub en français', 'https://docs.github.com/fr']],
+  play: [['Google Play Academy (cours gratuits)', 'https://playacademy.withgoogle.com'], ['Aide de la Play Console', 'https://support.google.com/googleplay/android-developer']],
+  bugs: [['Ton propre projet : RentaCourse', ''], ['Aide Android : enregistrer l’écran', 'https://support.google.com/android']],
+  tests: [['Ton propre projet : RentaCourse', ''], ['Google Play Academy', 'https://playacademy.withgoogle.com']],
+  privacy: [['Aide de la Play Console (règles et sécurité des données)', 'https://support.google.com/googleplay/android-developer'], ['Centre des règles Google Play', 'https://play.google/developer-content-policy/']],
+  aso: [['Google Play Academy (fiche du Play Store)', 'https://playacademy.withgoogle.com'], ['Aide de la Play Console', 'https://support.google.com/googleplay/android-developer']],
+  users: [['Ton entourage de livreurs', ''], ['Google Play Academy (croissance)', 'https://playacademy.withgoogle.com']],
+  feedback: [['Google Forms (questionnaires gratuits)', 'https://forms.google.com'], ['Aide de la Play Console (avis)', 'https://support.google.com/googleplay/android-developer']],
+  stats: [['Aide de la Play Console (statistiques)', 'https://support.google.com/googleplay/android-developer'], ['Google Play Academy', 'https://playacademy.withgoogle.com']],
+  kotlin: [['Documentation Kotlin', 'https://kotlinlang.org/docs/home.html'], ['Cours Android gratuits de Google', 'https://developer.android.com/courses']],
+  studio: [['Cours Android gratuits de Google', 'https://developer.android.com/courses'], ['Guide Android Studio', 'https://developer.android.com/studio/intro']],
+  money: [['Aide de la Play Console (frais et paiements)', 'https://support.google.com/googleplay/android-developer'], ['Google Play Academy', 'https://playacademy.withgoogle.com']],
+  roadmap: [['Ton tableau de bord : onglet Projets', ''], ['Une feuille et un stylo', '']],
+  linux: [['Linux Journey (en anglais, très simple)', 'https://linuxjourney.com'], ['OpenClassrooms (cherche « Linux »)', 'https://openclassrooms.com']],
+  secu: [['Tutoriels DigitalOcean (« Initial Server Setup »)', 'https://www.digitalocean.com/community/tutorials'], ['OpenClassrooms (cherche « Linux »)', 'https://openclassrooms.com']],
+  backup: [['Tutoriels DigitalOcean (sauvegardes, cron)', 'https://www.digitalocean.com/community/tutorials'], ['Linux Journey', 'https://linuxjourney.com']],
+  sql: [['SQLBolt (exercices dans le navigateur)', 'https://sqlbolt.com'], ['OpenClassrooms (cherche « SQL »)', 'https://openclassrooms.com']],
+  discord: [['Centre d’aide Discord', 'https://support.discord.com'], ['Ta communauté de joueurs', '']],
+  pitch: [['L’appareil photo de ton téléphone', ''], ['Ta femme ou un ami comme public', '']]
+};
+const SKILL_METHOD = [
+  ['Lis la leçon', 'Une seule par jour. Les jours de travail, 15 minutes le soir suffisent.'],
+  ['Regarde une courte vidéo', 'Sur YouTube, cherche les mots indiqués. 5 à 10 minutes, pas plus.'],
+  ['Fais-le pour de vrai', 'Tout de suite, même en petit, sur RentaCourse ou ton serveur. C’est en faisant qu’on retient.'],
+  ['Bloqué ? Demande à Claude', 'Touche « Demander à Claude » : la question est copiée, tu n’as plus qu’à la coller.'],
+  ['Note ce que tu as retenu', 'Une phrase suffit. Puis coche la leçon.']
+];
+function skillPrompt(sk, lesson) {
+  return 'Je suis débutant et je ne sais pas coder. Je construis RentaCourse (une application Android pour les livreurs) et un serveur de jeu. ' +
+    'Cette semaine j’apprends : « ' + sk.t + ' ». Explique-moi simplement, étape par étape, comment faire ceci : « ' + lesson + ' ». ' +
+    'Donne-moi ensuite un petit exercice de 10 minutes à faire tout de suite, et dis-moi comment vérifier que j’ai réussi.';
+}
 function skillHTML(today) {
   const i = skillIndex(today), sk = SKILLS[i], done = state.skill.done[sk.id] || {};
   const n = sk.l.filter((_, j) => done[j]).length;
   let h = '<section id="skill"><h2>📚 Skill de la semaine</h2><div class="card stack">' +
     '<div class="theme">Skill ' + (i + 1) + ' sur ' + SKILLS.length + '</div><h3 style="font-size:19px">' + esc(sk.t) + '</h3><p class="small muted">' + esc(sk.why) + '</p>' +
     '<div class="bar"><i style="width:' + Math.round(n / sk.l.length * 100) + '%"></i></div><p class="small muted">' + n + ' / ' + sk.l.length + ' leçons · environ 15 minutes chacune</p><ul class="list">';
-  sk.l.forEach((l, j) => { h += '<li class="item' + (done[j] ? ' done' : '') + '"><button class="check" data-act="skillToggle" data-j="' + j + '" aria-pressed="' + !!done[j] + '" aria-label="Leçon faite"><span>' + I.check + '</span></button><div class="ttext" style="padding:10px 4px"><span>' + esc(l) + '</span></div></li>'; });
-  h += '</ul><p class="small muted">Pour apprendre : cherche sur YouTube « ' + esc(sk.q) + ' ». Si tu bloques, demande à Claude de t’expliquer la leçon simplement.</p>' +
-    '<div class="addrow"><button class="btn ghost" data-act="skillMove" data-n="-1">‹ Précédent</button><button class="btn ghost" data-act="skillMove" data-n="1">Suivant ›</button></div>';
-  h += det('skills-all', 'Tout le programme (' + SKILLS.length + ' semaines)', '<ul class="stack" style="gap:8px">' + SKILLS.map((x, j) => {
+  sk.l.forEach((l, j) => { h += '<li class="item' + (done[j] ? ' done' : '') + '"><button class="check" data-act="skillToggle" data-j="' + j + '" aria-pressed="' + !!done[j] + '" aria-label="Leçon faite"><span>' + I.check + '</span></button><div class="ttext" style="padding:10px 4px"><span>' + esc(l) + '</span></div><button class="icon" data-act="skillAsk" data-j="' + j + '" aria-label="Demander à Claude" title="Demander à Claude">❓</button></li>'; });
+  h += '</ul><div class="addrow"><button class="btn ghost" data-act="skillMove" data-n="-1">‹ Précédent</button><button class="btn ghost" data-act="skillMove" data-n="1">Suivant ›</button></div></div>';
+  // Comment apprendre
+  const res = SKILL_RES[sk.id] || [];
+  h += '<div class="card stack" style="margin-top:12px"><h3>🧭 Comment apprendre ce skill</h3><ol class="steps">' +
+    SKILL_METHOD.map(([a, b]) => '<li><b>' + a + '.</b> ' + b + '</li>').join('') + '</ol>' +
+    '<p class="fieldlabel">Vidéos</p><p class="small">Sur YouTube, cherche : <b>« ' + esc(sk.q) + ' »</b></p>' +
+    '<p class="fieldlabel">Où apprendre</p><ul class="stack" style="gap:6px">' + res.map(([nm, u]) => '<li class="small">' + (u ? '<a href="' + u + '" target="_blank" rel="noopener">' + esc(nm) + ' ↗</a>' : '• ' + esc(nm)) + '</li>').join('') + '</ul>' +
+    '<p class="fieldlabel">Ce que j’ai appris cette semaine</p><textarea id="skillNote" data-skillnote="' + sk.id + '" placeholder="Une phrase par leçon…">' + esc((state.skill.notes || {})[sk.id] || '') + '</textarea></div>';
+  h += '<div style="margin-top:12px">' + det('skills-all', 'Tout le programme (' + SKILLS.length + ' semaines)', '<ul class="stack" style="gap:8px">' + SKILLS.map((x, j) => {
     const d = state.skill.done[x.id] || {}, c = x.l.filter((_, k) => d[k]).length;
-    return '<li class="small' + (j === i ? '' : ' muted') + '">' + (j + 1) + '. ' + esc(x.t) + (c === x.l.length ? ' ✓' : c ? ' (' + c + '/' + x.l.length + ')' : '') + (j === i ? ' · cette semaine' : '') + '</li>'; }).join('') + '</ul>');
-  return h + '</div></section>';
+    return '<li class="small' + (j === i ? '' : ' muted') + '">' + (j + 1) + '. ' + esc(x.t) + (c === x.l.length ? ' ✓' : c ? ' (' + c + '/' + x.l.length + ')' : '') + (j === i ? ' · cette semaine' : '') + '</li>'; }).join('') + '</ul>') + '</div>';
+  return h + '</section>';
 }
+// La case de l'onglet Jour
 function skillLineHTML(today) {
-  const sk = SKILLS[skillIndex(today)], done = state.skill.done[sk.id] || {};
-  const j = sk.l.findIndex((_, k) => !done[k]);
-  if (j < 0) return '';
-  return '<button class="card linkcard" data-act="goTab" data-tab="objectifs"><span class="theme">Skill de la semaine</span><b>' + esc(sk.t) + '</b><span class="small muted">Leçon ' + (j + 1) + ' : ' + esc(sk.l[j]) + ' ›</span></button>';
+  const i = skillIndex(today), sk = SKILLS[i], done = state.skill.done[sk.id] || {};
+  const n = sk.l.filter((_, k) => done[k]).length, j = sk.l.findIndex((_, k) => !done[k]);
+  let h = '<section id="skillday"><h2>📚 Mon skill de la semaine</h2><div class="card stack"><div class="theme">Semaine ' + (i + 1) + ' sur ' + SKILLS.length + ' · ' + n + ' / ' + sk.l.length + ' leçons</div><h3 style="font-size:19px">' + esc(sk.t) + '</h3>';
+  if (j < 0) return h + '<p class="ok-t"><b>✓ Skill terminé cette semaine. Bravo.</b></p><p class="small muted">La semaine prochaine : ' + esc(SKILLS[(i + 1) % SKILLS.length].t) + '.</p><button class="btn block" data-act="goTab" data-tab="objectifs">Revoir le skill</button></div></section>';
+  h += '<p class="small muted">' + esc(sk.why) + '</p><p class="fieldlabel">Leçon du jour (15 min)</p><ul class="list">' +
+    '<li class="item"><button class="check" data-act="skillToggle" data-j="' + j + '" aria-pressed="false" aria-label="Leçon faite"><span>' + I.check + '</span></button><div class="ttext" style="padding:10px 4px"><span>' + esc(sk.l[j]) + '</span></div></li></ul>' +
+    '<p class="small"><b>Comment faire :</b> 1. regarde une vidéo de 5 à 10 min (YouTube : « ' + esc(sk.q) + ' ») · 2. fais-le pour de vrai · 3. coche la case.</p>' +
+    '<button class="btn primary block" data-act="skillAsk" data-j="' + j + '">❓ Demander à Claude de m’expliquer</button><button class="btn block" data-act="goTab" data-tab="objectifs">Voir tout le skill et comment l’apprendre ›</button></div></section>';
+  return h;
 }
 function gainReminderHTML(today, evening) {
   const ty = dayType(today);
@@ -2244,6 +2293,19 @@ const ACTS = {
     if (d[j]) delete d[j]; else { d[j] = true; if (sk.l.every((_, k) => d[k])) toast('✓ Skill de la semaine terminé'); else bravo(); }
   },
   skillMove: el => { state.skill.offset += +el.dataset.n; },
+  skillAsk: el => {
+    const sk = SKILLS[skillIndex(todayStr())], txt = skillPrompt(sk, sk.l[+el.dataset.j]);
+    const show = copied => {
+      const d = $('#dlg');
+      d.innerHTML = '<div class="sheet"><h2 style="margin:0">' + (copied ? '✓ Question copiée' : 'Ta question pour Claude') + '</h2>' +
+        '<p class="small muted">' + (copied ? 'Ouvre Claude, appuie longuement dans la zone de texte, choisis « Coller », puis envoie.' : 'Appuie longuement sur le texte pour le copier, puis colle-le dans Claude.') + '</p>' +
+        '<p class="card small" style="background:var(--card2);box-shadow:none;user-select:text">' + esc(txt) + '</p>' +
+        '<a class="btn primary block" href="https://claude.ai/new" target="_blank" rel="noopener" data-x="1">Ouvrir Claude</a><button class="btn ghost block" data-x="1">Fermer</button></div>';
+      d.onclick = e => { if (e.target.closest('[data-x]')) { d.close(); d.onclick = null; } };
+      d.showModal();
+    };
+    try { navigator.clipboard.writeText(txt).then(() => show(true), () => show(false)); } catch (e) { show(false); }
+  },
   saveKids: () => { state.kids = [$('#kid0').value.trim(), $('#kid1').value.trim()]; $('#kid0').value = ''; $('#kid1').value = ''; toast('Prénoms enregistrés'); },
   editHabit: el => { const h = state.habits.find(x => x.id === el.dataset.id); sheet({ title: 'Renommer l’habitude', fields: [{ type: 'text', label: 'Habitude', value: h.name }], onSave: ([v]) => { h.name = v; } }); },
   delHabit: el => { const i = state.habits.findIndex(x => x.id === el.dataset.id); const [h] = state.habits.splice(i, 1); toast('Habitude supprimée', () => state.habits.splice(i, 0, h)); },
@@ -2314,6 +2376,8 @@ document.addEventListener('input', e => {
     st[id + '_txt'] = t.value;
     if (t.value.trim() && !st[id]) { st[id] = true; const b = document.querySelector('[data-act=famToggle][data-id="' + id + '"]'); if (b) { b.setAttribute('aria-pressed', 'true'); b.closest('.item').classList.add('done'); } }
     save();
+  } else if (t.dataset.skillnote) {
+    state.skill.notes = state.skill.notes || {}; state.skill.notes[t.dataset.skillnote] = t.value; save();
   } else if (t.dataset.fambilan) {
     const st = famStore('w', d); st.bilan_txt = st.bilan_txt || {}; st.bilan_txt[t.dataset.fambilan] = t.value;
     if (t.value.trim()) st.bilan = true;
