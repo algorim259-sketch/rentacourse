@@ -286,6 +286,16 @@ summary { font-weight: 800; }
 /* Bandeau de couleur en haut de chaque onglet */
 .hero { color: #fff; border-radius: 26px; padding: 18px; background: linear-gradient(135deg, #10b981 0%, #0ea5e9 100%); box-shadow: 0 12px 30px rgba(14,165,233,.28); display: flex; flex-direction: column; gap: 12px; }
 .hero.poids { background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%); box-shadow: 0 12px 30px rgba(16,185,129,.28); }
+.ptitle { font-size: 30px; font-weight: 900; margin: 6px 2px 2px; }
+.psub { color: var(--muted); margin: 0 2px 4px; font-size: 15px; font-weight: 600; }
+.kpi .e { font-size: 24px; line-height: 1.2; margin-bottom: 4px; }
+.ms { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.ms:last-child { border-bottom: 0; }
+.ms .e { font-size: 26px; width: 34px; text-align: center; }
+.ms .l { flex: 1; }
+.ms .l b { display: block; font-weight: 900; font-size: 18px; }
+.ms .l small { color: var(--muted); font-weight: 600; font-size: 15px; }
+.hero.pesee { background: linear-gradient(135deg, #0ea5e9 0%, #8b5cf6 100%); box-shadow: 0 12px 30px rgba(139,92,246,.28); }
 .hero.sommeil { background: linear-gradient(135deg, #6366f1 0%, #0ea5e9 100%); box-shadow: 0 12px 30px rgba(99,102,241,.28); }
 .hero.sport { background: linear-gradient(135deg, #f97316 0%, #ec4899 100%); box-shadow: 0 12px 30px rgba(236,72,153,.28); }
 .hero.fam { background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); box-shadow: 0 12px 30px rgba(139,92,246,.3); }
@@ -316,7 +326,8 @@ summary { font-weight: 800; }
 .tabs { background: var(--navbg); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
 .tabs button { gap: 1px; color: var(--muted); }
 .tabs button .i { font-size: 22px; line-height: 1.1; filter: grayscale(1); opacity: .55; transition: transform .2s; }
-.tabs button span:last-child { font-size: 10.5px; font-weight: 800; }
+.tabs button span:last-child { font-size: 10px; font-weight: 800; }
+.tabs button .i { font-size: 21px; }
 .tabs button[aria-current="page"] { color: var(--accent-strong); }
 .tabs button[aria-current="page"] .i { filter: none; opacity: 1; transform: translateY(-2px) scale(1.12); }
 :root[data-theme="night"] .tabs button .i { opacity: .3; }
@@ -559,7 +570,7 @@ function defaultState() {
     counts: {}, fam: { days: {}, weeks: {}, months: {} }, kids: ['', ''],
     habitLog: {}, ideas: {}, generated: {}, dayOverrides: {}, recent: {},
     settings: { night: 'auto', tab: 'jour' }, lastExport: null,
-    earnings: {}, sleep: {}, sport: {}, wdaily: {}, wweeks: {}, wprof: { taille: 186, age: 31, act: 1.5, deficit: 700, stepGoal: 10000, trStart: null, trPhase: null }, platforms: DEFAULT_PLATFORMS.map(x => ({ ...x })), skill: { start: null, offset: 0, done: {} }
+    earnings: {}, sleep: {}, sport: {}, wdaily: {}, wweeks: {}, wphoto: {}, wprof: { taille: 186, age: 31, act: 1.5, deficit: 700, stepGoal: 10000, trStart: null, trPhase: null }, platforms: DEFAULT_PLATFORMS.map(x => ({ ...x })), skill: { start: null, offset: 0, done: {} }
   };
 }
 function normalize(o) {
@@ -576,7 +587,7 @@ function normalize(o) {
   if (!s.fam || typeof s.fam !== 'object') s.fam = {};
   for (const k of ['days', 'weeks', 'months']) if (!s.fam[k] || typeof s.fam[k] !== 'object') s.fam[k] = {};
   if (!Array.isArray(s.kids)) s.kids = ['', ''];
-  for (const k of ['earnings', 'sleep', 'sport', 'wdaily', 'wweeks']) if (!s[k] || typeof s[k] !== 'object') s[k] = {};
+  for (const k of ['earnings', 'sleep', 'sport', 'wdaily', 'wweeks', 'wphoto']) if (!s[k] || typeof s[k] !== 'object') s[k] = {};
   s.wprof = Object.assign({ taille: 186, age: 31, act: 1.5, deficit: 700, stepGoal: 10000, trStart: null, trPhase: null }, s.wprof || {});
   if (!Array.isArray(s.platforms) || !s.platforms.length) s.platforms = DEFAULT_PLATFORMS.map(x => ({ ...x }));
   for (const d in s.earnings) { const e = s.earnings[d]; if (e && !e.apps) { s.earnings[d] = { apps: e.amount > 0 ? { autre: e.amount } : {}, hours: e.hours || 0 }; } }
@@ -816,9 +827,18 @@ function heroJour(t, today, sh) {
       (w ? cur + '° ' + esc(wl) + ' · min ' + Math.round(w.min) + '° · max ' + Math.round(w.max) + '°' + (w.pmax >= 20 ? ' · pluie ' + w.pmax + ' %' : '') : (weatherLoading ? 'Météo en cours de chargement…' : 'Météo indisponible (pas de connexion)')) + '</span></button>' });
 }
 function heroFor(tab, today) {
+  if (tab === 'pesee') {
+    const pi = peseeInfo(today), l = weighList(), last = l[l.length - 1], prev = l[l.length - 2], cur = curWeight();
+    const diff = last && prev ? last[2] - prev[2] : null;
+    return hero({ cls: 'pesee', title: '⚖️ Pesée du jeudi',
+      badge: '<br><span class="badge">' + (pi.isThu ? (num(pi.e.poids) ? '✓ Pesée faite aujourd’hui' : 'C’est aujourd’hui !') : pi.days > 0 ? 'Prochaine : jeudi ' + parse(pi.thu).getDate() + ' (dans ' + pi.days + ' j)' : 'Prochaine : jeudi ' + parse(addDays(pi.thu, 7)).getDate()) + '</span>',
+      p: Math.max(0, Math.min(1, (W0 - cur) / (W0 - WT))),
+      big: last ? kg(last[2]) : 'Pas encore de pesée', line: last ? 'Pesée du jeudi ' + wDate(last[1]) + (diff !== null ? ' · ' + (diff > 0 ? '+' : '−') + Math.abs(diff).toFixed(1).replace('.', ',') + ' kg depuis la précédente' : '') : 'Pèse-toi jeudi matin, à jeun',
+      msg: '📸 Photo de ' + monthName(pi.month).toLowerCase() + ' : ' + (pi.photo ? 'prise ✓' : 'à prendre') });
+  }
   if (tab === 'poids') {
     const cur = curWeight(), pc = Math.max(0, Math.min(1, (W0 - cur) / (W0 - WT))), e = eaten(today), nd = needs();
-    return hero({ cls: 'poids', title: '⚖️ Perte de poids', badge: '<br><span class="badge">109 → 86 kg · 22 mai 2027</span>', p: pc,
+    return hero({ cls: 'poids', title: '🔥 Calories et repas', badge: '<br><span class="badge">109 → 86 kg · 22 mai 2027</span>', p: pc,
       big: kg(cur), line: kg(W0 - cur) + ' perdus · encore ' + kg(cur - WT), msg: '🔥 ' + fmtN(e.total) + ' / ' + fmtN(nd.cible) + ' kcal aujourd’hui · 💧 ' + cups(today) + ' / ' + CUPS + ' verres' });
   }
   if (tab === 'sommeil') {
@@ -1341,36 +1361,68 @@ function poidsJourHTML(s) {
     '<div class="addrow"><button class="btn" data-act="cupAdd" data-n="-1">− 1 verre</button><button class="btn primary" data-act="cupAdd" data-n="1">+ 1 verre</button></div><p class="small muted">1 verre en plastique ≈ 150 ml. Touche un verre pour le remplir.</p></div>';
   return h;
 }
-function poidsSemaineHTML(today) {
-  const wk = weekW(today), e = state.wweeks[wk] || {}, wv = num(e.poids);
-  let h = '<div class="card stack"><div class="theme">Semaine ' + wk + ' sur ' + NW + ' · du ' + wDate(dayW(wk)) + ' au ' + wDate(dayW(wk, 6)) + '</div>' +
-    '<p><span class="bignum">' + kg(planned(wk)) + '</span></p><p class="small muted">Objectif de fin de semaine</p>' +
-    '<p class="fieldlabel">Ma pesée (kg)</p><div class="addrow"><input type="text" id="wPoids" inputmode="decimal" autocomplete="off" placeholder="Ex. 107,4" value="' + esc(String(e.poids || '').replace('.', ',')) + '"><button class="btn primary" data-act="wSave" data-n="' + wk + '">Enregistrer</button></div>';
-  if (wv) { const d = wv - planned(wk); h += '<p>' + (d > 0 ? 'Pesée : <b>' + kg(wv) + '</b>, soit ' + kg(d) + ' au-dessus de l’objectif. On garde le cap.' : 'Pesée : <b>' + kg(wv) + '</b>, soit ' + kg(-d) + ' d’avance sur l’objectif. Bravo.') + '</p>'; }
-  else h += '<p class="small muted">Pèse-toi le jour choisi, puis entre ton poids ici.</p>';
-  // sommeil et sport de la semaine, calculés tout seuls
-  const days = [0, 1, 2, 3, 4, 5, 6].map(i => dayW(wk, i)).filter(d => d <= today);
+/* ---------- Pesée du jeudi et photo du mois ---------- */
+const thuOf = s => addDays(sundayOf(s), 4);
+const monthName = m => cap(new Date(+m.slice(0, 4), +m.slice(5, 7) - 1, 1).toLocaleDateString('fr-FR', { month: 'long' }));
+function weighList() { // pesées enregistrées : [semaine, date du jeudi, poids]
+  const l = []; for (let n = 1; n <= NW; n++) { const v = num((state.wweeks[n] || {}).poids); if (v) l.push([n, dayW(n, 1), v]); } return l;
+}
+function peseeInfo(today) {
+  const thu = thuOf(today), n = weekW(thu), e = state.wweeks[n] || {}, w = wday(today);
+  const days = Math.round((parse(thu) - parse(today)) / 864e5);
+  const month = today.slice(0, 7), photo = state.wphoto[month];
+  return { thu, n, e, w, days, isThu: w === 4, month, photo };
+}
+function peseeHTML(today) {
+  const pi = peseeInfo(today), { thu, n, e } = pi, wv = num(e.poids);
+  let h = '<section id="pesee"><div class="stack">';
+  h += '<div class="card stack"><h3>⚖️ Pesée de la semaine</h3>' +
+    '<p class="small muted">Jeudi ' + parse(thu).getDate() + ' ' + parse(thu).toLocaleDateString('fr-FR', { month: 'long' }) + ' · le matin, à jeun, après être passé aux toilettes, avant de boire ou manger.</p>' +
+    '<p><span class="bignum">' + kg(planned(n)) + '</span> <span class="muted small">objectif de la semaine ' + n + '</span></p>' +
+    '<p class="fieldlabel">Mon poids (kg)</p><div class="addrow"><input type="text" id="wPoids" inputmode="decimal" autocomplete="off" placeholder="Ex. 107,4" value="' + esc(String(e.poids || '').replace('.', ',')) + '"><button class="btn primary" data-act="wSave" data-n="' + n + '">Enregistrer</button></div>';
+  if (wv) { const d = wv - planned(n); h += '<p>' + (d > 0 ? 'Pesée : <b>' + kg(wv) + '</b>, soit ' + kg(d) + ' au-dessus de l’objectif. On garde le cap.' : 'Pesée : <b>' + kg(wv) + '</b>, soit ' + kg(-d) + ' d’avance sur l’objectif. Bravo.') + '</p>'; }
+  else if (pi.days > 0) h += '<p class="small muted">Prochaine pesée dans ' + pi.days + ' jour' + (pi.days > 1 ? 's' : '') + '. Si tu t’es déjà pesé, tu peux l’entrer maintenant.</p>';
+  else if (pi.days < 0) h += '<p class="small"><b>Tu as oublié la pesée de jeudi ?</b> Pèse-toi demain matin et entre-la ici.</p>';
+  else h += '<p class="small"><b>C’est aujourd’hui !</b> Entre ton poids ici.</p>';
+  const days = [0, 1, 2, 3, 4, 5, 6].map(i => dayW(n, i)).filter(d => d <= today);
   const sl = days.map(sleepMins).filter(v => v), nSport = days.filter(d => (state.sport[d] || []).length).length;
   h += '<p class="small muted">Cette semaine : sommeil moyen ' + (sl.length ? dur(Math.round(sl.reduce((a, b) => a + b, 0) / sl.length)) : '—') + ' · ' + nSport + ' jour' + (nSport > 1 ? 's' : '') + ' avec du sport</p>' +
-    '<p class="fieldlabel">Note de la semaine</p><input type="text" id="wNote" placeholder="Ex. semaine difficile, beaucoup de travail" value="' + esc(e.note || '') + '">' +
-    '<label class="btn block" for="wPhotoFile">Prendre la photo de la semaine</label><input type="file" id="wPhotoFile" accept="image/*" capture="environment" hidden>' +
-    '<p class="small muted">' + (e.photo ? '✓ Photo prise cette semaine. ' : '') + 'Photo toutes les 4 semaines : semaines 1, 5, 9, 13, 17, 21, 25 et 29.</p></div>';
+    '<p class="fieldlabel">Note de la semaine</p><input type="text" id="wNote" placeholder="Ex. semaine difficile, beaucoup de travail" value="' + esc(e.note || '') + '"></div>';
+  // Photo du mois
+  const mn = monthName(pi.month).toLowerCase();
+  h += '<div class="card stack"><h3>📸 Photo du mois</h3>' +
+    (pi.photo ? '<p class="ok-t"><b>✓ Photo de ' + mn + ' prise</b> le ' + parse(pi.photo).getDate() + '.</p><p class="small muted">Prochaine photo en ' + monthName(addMonths(pi.month, 1)).toLowerCase() + ', le jour de la pesée.</p>'
+      : '<p class="small">Une photo par mois, de préférence le jour de la pesée : même endroit, même lumière, même tenue. La photo de ' + mn + ' n’est pas encore prise.</p>') +
+    '<label class="btn ' + (pi.photo ? '' : 'primary ') + 'block" for="wPhotoFile">' + (pi.photo ? 'Reprendre la photo de ' + mn : 'Prendre la photo de ' + mn) + '</label><input type="file" id="wPhotoFile" accept="image/*" capture="environment" hidden></div>';
   h += '<div class="card stack"><h3>🖼️ Mes photos</h3><div id="wgal"><p class="small muted">Chargement…</p></div><p class="small muted">Les photos restent uniquement sur ton téléphone. Elles ne sont pas dans le fichier de sauvegarde.</p></div>';
-  h += '<div class="card stack"><h3>📅 Rappels</h3><p class="small">Pesée une fois par semaine, le même jour, le matin à jeun.</p><p class="small">Juge ta progression sur la moyenne de 2 pesées, jamais sur une seule.</p></div>';
+  // Historique des pesées
+  const l = weighList();
+  h += '<div><h3 style="margin-bottom:8px">📋 Mes pesées</h3><ul class="list">' + (l.length ? l.slice().reverse().map(([k, d, v], i, arr) => {
+    const prev = arr[i + 1], diff = prev ? v - prev[2] : null, x = state.wweeks[k] || {};
+    return '<li class="item"><button class="ttext" style="padding-left:12px" data-act="wEdit" data-n="' + k + '"><span>Jeudi ' + wDate(d) + '</span><small class="tag">Objectif ' + kg(planned(k)) + (x.note ? ' · ' + esc(x.note) : '') + '</small></button><b style="padding-right:14px;white-space:nowrap;text-align:right">' + kg(v) + (diff !== null ? '<br><span class="small ' + (diff <= 0 ? 'ok-t' : 'bad-t') + '">' + (diff > 0 ? '+' : '−') + Math.abs(diff).toFixed(1).replace('.', ',') + '</span>' : '') + '</b></li>';
+  }).join('') : '<li class="empty">Aucune pesée pour l’instant.</li>') + '</ul>';
   let rows = '';
-  for (let n = 1; n <= NW; n++) { const x = state.wweeks[n] || {}, v = num(x.poids), d = v ? v - planned(n) : null;
-    rows += '<li class="item" style="background:var(--card2)"><button class="ttext" style="padding-left:12px" data-act="wEdit" data-n="' + n + '"><span>Semaine ' + n + ' · ' + wDate(dayW(n)) + '</span><small class="tag">Objectif ' + kg(planned(n)) + (x.note ? ' · ' + esc(x.note) : '') + '</small></button><b style="padding-right:14px;white-space:nowrap" class="' + (d === null ? 'muted' : d > 1 ? 'bad-t' : 'ok-t') + '">' + (v ? kg(v) + ' (' + (d > 0 ? '+' : '−') + Math.abs(d).toFixed(1).replace('.', ',') + ')' : '—') + '</b></li>'; }
-  h += det('w-hist', 'Historique des ' + NW + ' semaines', '<ul class="list">' + rows + '</ul>');
-  return h;
+  for (let k = 1; k <= NW; k++) { const x = state.wweeks[k] || {}, v = num(x.poids), d = v ? v - planned(k) : null;
+    rows += '<li class="item"><button class="ttext" style="padding-left:12px" data-act="wEdit" data-n="' + k + '"><span>Semaine ' + k + ' · jeudi ' + wDate(dayW(k, 1)) + '</span><small class="tag">Objectif ' + kg(planned(k)) + '</small></button><b style="padding-right:14px;white-space:nowrap" class="' + (d === null ? 'muted' : d > 1 ? 'bad-t' : 'ok-t') + '">' + (v ? kg(v) : '—') + '</b></li>'; }
+  h += '<div style="margin-top:12px">' + det('w-hist', 'Toutes les semaines du plan (' + NW + ')', '<p class="small muted">Touche une semaine pour ajouter ou corriger une pesée oubliée.</p><ul class="list">' + rows + '</ul>') + '</div></div>';
+  h += '<div class="card stack"><h3>📅 Rappels</h3><p class="small">Pesée chaque jeudi, le matin, à jeun.</p><p class="small">Photo une fois par mois, le jour de la pesée.</p><p class="small">Juge ta progression sur la moyenne de 2 pesées, jamais sur une seule.</p></div>';
+  return h + '</div></section>';
+}
+function peseeReminderHTML(today) {
+  const pi = peseeInfo(today);
+  if (!pi.isThu || num(pi.e.poids)) return '';
+  return '<button class="card linkcard" data-act="goTab" data-tab="pesee"><span class="theme">C’est jeudi</span><b>⚖️ Jour de la pesée' + (pi.photo ? '' : ' et de la photo du mois') + '</b><span class="small muted">Touche ici pour entrer ton poids ›</span></button>';
 }
 function wChart() {
   const W = 900, H = 420, p = 70, x = n => p + (W - 2 * p) * n / NW, y = v => 24 + (H - 24 - p) * (110 - v) / 30;
   let s = '';
   for (let v = 80; v <= 110; v += 5) s += '<line x1="' + p + '" x2="' + (W - p) + '" y1="' + y(v) + '" y2="' + y(v) + '" style="stroke:var(--line)"/><text x="' + (p - 8) + '" y="' + (y(v) + 9) + '" font-size="28" text-anchor="end" style="fill:var(--muted);stroke:none">' + v + '</text>';
   const pl = []; for (let n = 0; n <= NW; n++) pl.push(x(n) + ',' + y(planned(n)));
-  s += '<polyline points="' + pl.join(' ') + '" style="fill:none;stroke:var(--muted);stroke-dasharray:7 6;stroke-width:2.5"/>';
+  s += '<polyline points="' + pl.join(' ') + '" style="fill:none;stroke:var(--accent2);stroke-dasharray:9 8;stroke-width:3"/>';
   const act = [[0, W0]].concat(wEntries());
-  if (act.length > 1) { s += '<polyline points="' + act.map(([n, v]) => x(n) + ',' + y(v)).join(' ') + '" style="fill:none;stroke:var(--accent);stroke-width:4"/>';
+  if (act.length > 1) { const pts = act.map(([n, v]) => x(n) + ',' + y(v)).join(' ');
+    s += '<polygon points="' + x(0) + ',' + y(80) + ' ' + pts + ' ' + x(act[act.length - 1][0]) + ',' + y(80) + '" style="fill:var(--accent);fill-opacity:.15;stroke:none"/>';
+    s += '<polyline points="' + pts + '" style="fill:none;stroke:var(--accent);stroke-width:5;stroke-linejoin:round"/>';
     act.forEach(([n, v]) => { s += '<circle cx="' + x(n) + '" cy="' + y(v) + '" r="6" style="fill:var(--card);stroke:var(--accent);stroke-width:3"/>'; }); }
   W_MS.forEach(([, , n], i) => { s += '<text x="' + x(n) + '" y="' + (H - 12) + '" font-size="26" text-anchor="middle" style="fill:var(--muted);stroke:none">' + W_MONTHS[i] + '</text>'; });
   return '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto" role="img" aria-label="Courbe de poids prévue et réelle">' + s + '</svg>';
@@ -1379,13 +1431,17 @@ function poidsProgresHTML(today) {
   const ent = wEntries(), lastN = ent.length ? ent[ent.length - 1][0] : 0, cur = curWeight();
   const lost = W0 - cur, left = cur - WT, pc = Math.max(0, Math.min(100, lost / (W0 - WT) * 100));
   const weeksLeft = NW - lastN, req = weeksLeft > 0 ? left / weeksLeft : 0, days = Math.max(0, Math.round((parse(W_END) - parse(today)) / 864e5));
-  let h = '<div class="card stack"><h3>🏁 Vers les 86 kg</h3><div class="bar" style="height:14px"><i style="width:' + pc + '%"></i></div><div class="goalhead small muted"><span>109 kg</span><span>' + Math.round(pc) + ' %</span><span>86 kg</span></div></div>';
-  h += '<div class="kpis">' + [[kg(cur), 'poids actuel'], [kg(lost), 'perdus'], [kg(left), 'restants'], [days + ' j', 'avant le 22 mai'], [req.toFixed(2).replace('.', ',') + ' kg', 'par semaine requis'], [wStreak(today) + ' j', 'série en cours']]
-    .map(([a, b]) => '<div class="kpi"><b>' + a + '</b><span>' + b + '</span></div>').join('') + '</div>';
-  h += '<div class="card stack"><h3>📈 Trajectoire</h3>' + wChart() + '<p class="small muted">Pointillés : prévu. Ligne bleue : tes pesées.</p></div>';
-  h += '<div class="card stack"><h3>🏅 Objectifs par mois</h3><ul class="list">' + W_MS.map(([l, k, n]) => { const e = num((state.wweeks[n] || {}).poids);
-    const st = e ? (e <= k ? '<span class="ok-t">Atteint</span>' : '<span class="bad-t">+' + (e - k).toFixed(1).replace('.', ',') + ' kg</span>') : '<span class="muted">' + (n <= lastN ? 'Non renseigné' : 'À venir') + '</span>';
-    return '<li class="item" style="background:var(--card2)"><div class="ttext" style="padding:10px 12px"><span><b>' + k + ' kg</b></span><small class="tag">' + l + '</small></div><span style="padding-right:14px">' + st + '</span></li>'; }).join('') + '</ul></div>';
+  let h = '<div><h1 class="ptitle">Mes progrès</h1><p class="psub">109 kg → 86 kg · objectif le 22 mai 2027</p></div>';
+  if (!ent.length) h += '<div class="card stack"><p><b>Aucune pesée pour l’instant.</b></p><p class="small muted">Entre ta dernière pesée dans l’onglet ⚖️ Pesée : tes progrès se rempliront tout seuls.</p><button class="btn primary block" data-act="goTab" data-tab="pesee">Entrer ma pesée</button></div>';
+  h += '<div class="card stack"><h3>🏁 Vers les 86 kg</h3><div class="bar" style="height:16px"><i style="width:' + pc + '%"></i></div><div class="goalhead small muted" style="font-weight:800"><span>109 kg</span><span>' + Math.round(pc) + ' %</span><span>86 kg</span></div></div>';
+  h += '<div class="kpis">' + [['⚖️', kg(cur), 'Poids actuel'], ['🔥', kg(lost), 'Perdus'], ['🎯', kg(left), 'Restants'], ['⏳', days + ' j', 'Avant le 22 mai'], ['📉', req.toFixed(2).replace('.', ',') + ' kg', 'Par semaine requis'], ['🏆', wStreak(today) + ' j', 'Série en cours']]
+    .map(([e, a, b]) => '<div class="kpi"><div class="e">' + e + '</div><b>' + a + '</b><span>' + b + '</span></div>').join('') + '</div>';
+  h += '<div class="card stack"><h3>📈 Trajectoire</h3>' + wChart() + '<p class="small muted">Pointillé bleu : prévu. Vert : tes pesées.</p></div>';
+  h += '<div class="card"><h3>🏅 Objectifs par mois</h3>' + W_MS.map(([l, k, n]) => { const e = num((state.wweeks[n] || {}).poids);
+    let emo, st;
+    if (e) { if (e <= k) { emo = '🏅'; st = '<span class="ok-t"><b>Atteint</b></span>'; } else { emo = '🔁'; st = '<span class="bad-t"><b>+' + (e - k).toFixed(1).replace('.', ',') + ' kg</b></span>'; } }
+    else { emo = n <= lastN ? '❔' : '⏳'; st = '<span class="muted">' + (n <= lastN ? 'Non renseigné' : 'À venir') + '</span>'; }
+    return '<div class="ms"><span class="e">' + emo + '</span><span class="l"><b>' + k + ' kg</b><small>' + l + '</small></span>' + st + '</div>'; }).join('') + '</div>';
   return h;
 }
 function poidsMenusHTML(today) {
@@ -1414,10 +1470,10 @@ function poidsPlanHTML() {
     '<p class="small muted">Métabolisme de base ≈ ' + fmtN(nd.bmr) + ' kcal ; dépense totale ≈ ' + fmtN(nd.tdee) + ' kcal par jour. Cible ≈ ' + fmtN(nd.cible) + ' kcal par jour (plancher de sécurité 1 800 kcal) ; protéines ≈ ' + nd.prot + ' g par jour.</p></div>';
 }
 function poidsHTML(today) {
-  const sub = ui.wTab || 'jour';
+  const sub = ui.wTab || 'progres';
   let h = '<section id="poids"><div class="subtabs">' +
-    [['jour', 'Aujourd’hui'], ['semaine', 'Semaine'], ['progres', 'Progrès'], ['menus', 'Menus'], ['plan', 'Plan']].map(([k, l]) => '<button data-act="wTab" data-v="' + k + '" aria-pressed="' + (k === sub) + '">' + l + '</button>').join('') + '</div><div class="stack">';
-  h += sub === 'semaine' ? poidsSemaineHTML(today) : sub === 'progres' ? poidsProgresHTML(today) : sub === 'menus' ? poidsMenusHTML(today) : sub === 'plan' ? poidsPlanHTML() : poidsJourHTML(today);
+    [['progres', '📈 Progrès'], ['jour', '🔥 Calories et repas'], ['menus', '🍽️ Menus'], ['plan', '🗺️ Plan']].map(([k, l]) => '<button data-act="wTab" data-v="' + k + '" aria-pressed="' + (k === sub) + '">' + l + '</button>').join('') + '</div><div class="stack">';
+  h += sub === 'progres' ? poidsProgresHTML(today) : sub === 'menus' ? poidsMenusHTML(today) : sub === 'plan' ? poidsPlanHTML() : poidsJourHTML(today);
   return h + '</div></section>';
 }
 
@@ -1471,22 +1527,23 @@ async function renderPhotos() {
   let items; try { items = (await IDB.all()) || []; } catch (e) { el.innerHTML = '<p class="small muted">Les photos ne sont pas disponibles dans ce navigateur.</p>'; return; }
   photoUrls.forEach(u => URL.revokeObjectURL(u)); photoUrls = [];
   const url = b => { const u = URL.createObjectURL(b); photoUrls.push(u); return u; };
-  const lab = it => 'Sem. ' + it.w + ((state.wweeks[it.w] || {}).poids ? ' · ' + kg(num(state.wweeks[it.w].poids)) : '');
-  items.sort((a, b) => a.w - b.w);
+  const kOf = it => it.k || 'w' + it.w;
+  const lab = it => { const d = it.d || dayW(it.w); const n = weekW(d), v = num((state.wweeks[n] || {}).poids); return monthName(d.slice(0, 7)) + (v ? ' · ' + kg(v) : ''); };
+  items.sort((a, b) => (a.d || '') < (b.d || '') ? -1 : 1);
   let h = '';
   if (items.length >= 2) { const a = items[0], z = items[items.length - 1];
     h += '<div class="two"><div><img class="wph" src="' + url(a.blob) + '" alt="Première photo"><p class="small" style="text-align:center">Avant · ' + esc(lab(a)) + '</p></div><div><img class="wph" src="' + url(z.blob) + '" alt="Dernière photo"><p class="small" style="text-align:center">Maintenant · ' + esc(lab(z)) + '</p></div></div>'; }
-  h += items.length ? '<div class="gal">' + items.map(it => '<div><img class="wph" src="' + url(it.blob) + '" alt="Photo semaine ' + it.w + '"><p class="small muted">' + esc(lab(it)) + ' <button class="linkbtn" style="min-height:32px;padding:0 4px" data-act="photoDel" data-n="' + it.w + '">Supprimer</button></p></div>').join('') + '</div>'
+  h += items.length ? '<div class="gal">' + items.map(it => '<div><img class="wph" src="' + url(it.blob) + '" alt="Photo"><p class="small muted">' + esc(lab(it)) + ' <button class="linkbtn" style="min-height:32px;padding:0 4px" data-act="photoDel" data-k="' + esc(kOf(it)) + '">Supprimer</button></p></div>').join('') + '</div>'
     : '<p class="small muted">Aucune photo pour l’instant.</p>';
   el.innerHTML = h;
 }
 document.addEventListener('change', async e => {
   if (e.target.id !== 'wPhotoFile') return;
   const f = e.target.files && e.target.files[0]; if (!f) return;
-  const wk = weekW(todayStr());
+  const d = todayStr(), m = d.slice(0, 7);
   try { let b; try { b = await shrink(f); } catch (er) { b = f; }
-    await IDB.put('w' + wk, { w: wk, blob: b, d: todayStr() });
-    (state.wweeks[wk] = state.wweeks[wk] || {}).photo = true; render(); toast('Photo enregistrée');
+    await IDB.put('m' + m, { k: 'm' + m, blob: b, d });
+    state.wphoto[m] = d; render(); toast('Photo du mois enregistrée');
   } catch (er) { toast('Photo non enregistrée'); }
   e.target.value = '';
 });
@@ -1648,7 +1705,7 @@ function gainReminderHTML(today, evening) {
 /* ---------- Onglets ---------- */
 const GEAR_SVG = '<svg viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>';
 const TABS = [
-  ['jour', 'Jour', '☀️'], ['poids', 'Poids', '⚖️'], ['sommeil', 'Sommeil', '😴'], ['sport', 'Sport', '💪'],
+  ['jour', 'Jour', '☀️'], ['pesee', 'Pesée', '⚖️'], ['poids', 'Progrès', '📈'], ['sommeil', 'Sommeil', '😴'], ['sport', 'Sport', '💪'],
   ['enfants', 'Famille', '👨‍👦‍👦'], ['gains', 'Gains', '💰'], ['objectifs', 'Projets', '🎯']
 ];
 function tabsHTML(cur) {
@@ -1861,12 +1918,13 @@ function render() {
   const blocked = sh.active && !ui.showShabbat;
   let h = '';
   if (blocked) h = headerHTML(t, today, sh) + shabbatHTML(sh);
-  else if (tab === 'jour') h = headerHTML(t, today, sh) + (evening ? demainHTML(tom) : '') + gainReminderHTML(today, evening) +
+  else if (tab === 'jour') h = headerHTML(t, today, sh) + (evening ? demainHTML(tom) : '') + gainReminderHTML(today, evening) + peseeReminderHTML(today) +
     tasksHTML(today, tom, evening) + habitsHTML(today) + skillLineHTML(today) + ideasHTML(today);
   else if (tab === 'objectifs') h = heroFor(tab, today) + goalsHTML(today) + skillHTML(today);
   else if (tab === 'sommeil') h = heroFor(tab, today) + sleepTabHTML(today);
   else if (tab === 'sport') h = heroFor(tab, today) + sportHTML(today);
-  else if (tab === 'poids') h = heroFor(tab, today) + poidsHTML(today);
+  else if (tab === 'poids') h = ((ui.wTab || 'progres') === 'progres' ? '' : heroFor(tab, today)) + poidsHTML(today);
+  else if (tab === 'pesee') h = heroFor(tab, today) + peseeHTML(today);
   else if (tab === 'enfants') h = heroFor(tab, today) + ((state.ideas[today] || {}).enfants ? '<section>' + ideaCard('enfants', state.ideas[today].enfants) + '</section>' : '') + famHTML(today);
   else if (tab === 'gains') h = heroFor(tab, today) + gainsHTML(today);
   else h = '<button class="linkbtn" data-act="goTab" data-tab="jour" style="align-self:flex-start;margin-bottom:-16px">‹ Retour</button>' + settingsHTML();
@@ -1876,7 +1934,7 @@ function render() {
   $('#tabs').hidden = blocked;
   for (const id in typed) { const i = document.getElementById(id); if (i) i.value = typed[id]; }
   if (focused && typed[focused] !== undefined) { const i = document.getElementById(focused); if (i) i.focus(); }
-  $('#fab').hidden = blocked || tab === 'reglages';
+  $('#fab').hidden = blocked || tab === 'reglages' || tab === 'pesee' || tab === 'poids';
   $('#fab').setAttribute('aria-label', tab === 'gains' ? 'Ajouter des gains' : 'Ajouter une tâche');
   lastKey = today + '|' + t.getHours() + '|' + sh.active;
   save();
@@ -2125,6 +2183,7 @@ const ACTS = {
   gTab: el => { ui.gTab = el.dataset.v; },
   sportAdd: () => sportSheet(todayStr()),
   wTab: el => { ui.wTab = el.dataset.v; },
+  goPesee: () => { state.settings.tab = 'pesee'; window.scrollTo(0, 0); },
   menuDay: el => { ui.menuDay = +el.dataset.v; },
   wObj: el => {
     const d = todayStr(), id = el.dataset.id;
@@ -2155,7 +2214,7 @@ const ACTS = {
     sheet({ title: 'Semaine ' + n + ' · ' + wDate(dayW(n)), fields: [{ type: 'number', label: 'Pesée (kg)', value: x.poids || '', placeholder: 'Objectif ' + planned(n).toFixed(1) }, { type: 'text', label: 'Note', value: x.note || '' }],
       onSave: ([v, note]) => { const y = state.wweeks[n] = state.wweeks[n] || {}; const w = num(v); if (w) y.poids = Math.round(w * 10) / 10; else delete y.poids; y.note = note; } });
   },
-  photoDel: async el => { try { await IDB.del('w' + el.dataset.n); } catch (e) { } renderPhotos(); },
+  photoDel: async el => { const k = el.dataset.k; try { await IDB.del(k); } catch (e) { } if (k.startsWith('m')) { delete state.wphoto[k.slice(1)]; save(); render(); } else renderPhotos(); },
   pAct: el => { state.wprof.act = +el.dataset.v; },
   pSave: () => { const pr = state.wprof; pr.taille = num($('#pTaille').value) || pr.taille; pr.age = num($('#pAge').value) || pr.age; const d = num($('#pDef').value); if (d !== null) pr.deficit = Math.max(0, Math.min(1000, d)); toast('Profil enregistré'); },
   stepSave: () => { const v = Math.max(0, Math.round(num($('#stepIn').value) || 0)), r = wd(todayStr()), before = +r.pas || 0; r.pas = v; $('#stepIn').value = '';
