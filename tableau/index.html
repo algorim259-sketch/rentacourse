@@ -635,8 +635,22 @@ function headerHTML(t, today, sh) {
     '<div class="typerow"><button class="chip accent" data-act="openWeek" aria-label="Changer le type de journée">' + label + '</button>' +
     (hint ? '<span class="muted small">' + hint + '</span>' : '') + '</div>' +
     '<button class="weather" data-act="refreshWeather" aria-label="Actualiser la météo">' + weatherLine(today, true) + '</button>' +
+    installHTML() +
     (!storageOK ? '<div class="warnbar">Attention : ce navigateur n’enregistre pas les données (mode privé ?). Pense à exporter une sauvegarde.</div>' : '') +
     '</header>';
+}
+
+/* ---------- Installation sur l'écran d'accueil ---------- */
+let installEvt = null;
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; render(); });
+window.addEventListener('appinstalled', () => { installEvt = null; render(); toast('Application installée'); });
+function installHTML() {
+  if (isStandalone() || state.settings.hideInstall) return '';
+  if (installEvt) return '<div class="card stack"><p><b>Installer l’application</b><br><span class="small muted">Elle s’ouvrira comme une vraie application, sans onglet, même sans internet.</span></p>' +
+    '<button class="btn primary block" data-act="install">Installer l’application</button></div>';
+  return '<div class="card stack"><p><b>Pour l’installer comme une application</b><br><span class="small muted">Ouvre cette page dans <b>Chrome</b>, touche ⋮ puis « Installer l’application ». Si tu vois seulement « Ajouter à l’écran d’accueil », choisis « Installer », pas « Créer un raccourci ».</span></p>' +
+    '<button class="linkbtn" data-act="hideInstall">Ne plus afficher</button></div>';
 }
 
 function demainHTML(tom) {
@@ -1069,6 +1083,8 @@ const ACTS = {
   },
   delBank: el => { const l = state.bank[ui.bankTheme], i = l.findIndex(x => x.id === el.dataset.id); const [it] = l.splice(i, 1); toast('Idée supprimée', () => l.splice(i, 0, it)); },
   addBank: el => { const inp = $('#addbank'), v = inp.value.trim(); if (!v) { inp.focus(); return; } state.bank[ui.bankTheme].push({ id: uid(), text: v, len: el.dataset.len }); inp.value = ''; toast('Idée ajoutée'); },
+  install: async () => { if (!installEvt) return; installEvt.prompt(); try { await installEvt.userChoice; } catch (e) { } installEvt = null; render(); },
+  hideInstall: () => { state.settings.hideInstall = true; },
   export: () => exportData(false),
   share: () => exportData(true),
   import: () => $('#importFile').click()
