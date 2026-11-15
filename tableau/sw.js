@@ -1,6 +1,6 @@
 // Permet d'ouvrir le tableau de bord sans connexion.
 // La météo (api.open-meteo.com) n'est jamais mise en cache ici.
-const CACHE = 'tableau-v6';
+const CACHE = 'tableau-v7';
 const FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
@@ -13,7 +13,13 @@ self.addEventListener('activate', e => {
 });
 self.addEventListener('fetch', e => {
   const req = e.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
+  const url = new URL(req.url);
+  // Police Nunito (Google Fonts) : gardée après le premier chargement
+  if (req.method === 'GET' && (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com')) {
+    e.respondWith(caches.match(req).then(c => c || fetch(req).then(res => { const copy = res.clone(); caches.open(CACHE).then(ca => ca.put(req, copy)); return res; })));
+    return;
+  }
+  if (req.method !== 'GET' || url.origin !== location.origin) return;
   // Réseau d'abord (pour recevoir les mises à jour), sinon la copie enregistrée.
   e.respondWith((async () => {
     const cached = await caches.match(req, { ignoreSearch: true });
