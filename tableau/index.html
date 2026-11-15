@@ -1353,6 +1353,9 @@ function poidsJourHTML(s) {
     return chk('wMeal', 'm' + i, esc(x[0] + ' · ' + t), !!r['m' + i], '', esc(rest.join(' : ')) + ' · ' + esc(x[2])); }).join('') + '</ul>' +
     mn.slots.filter(x => !x[2]).map(x => '<p class="small muted" style="margin-top:8px">' + esc(x[1]) + '</p>').join('') + '<p class="small muted">' + esc(mn.tot) + '</p></div>';
   const j = r.journal || [];
+  h += '<div class="card stack"><h3>📸 Photo de mon plat</h3><p class="small muted">Prends ton plat en photo : elle part dans l’application Claude avec la question déjà écrite. Claude te donne les calories, tu reviens ici et tu les entres.</p>' +
+    '<label class="btn primary block" for="platFile">📷 Prendre mon plat en photo</label><input type="file" id="platFile" accept="image/*" capture="environment" hidden>' +
+    '<button class="linkbtn" data-act="platKcal">J’ai déjà la réponse de Claude : entrer les calories</button></div>';
   h += '<div class="card stack"><h3>📓 J’ai mangé autre chose</h3><p class="small muted">Écris ce que tu as mangé ou bu. Si tu connais les calories, tape-les ; sinon une estimation est faite pour les aliments courants (pita, shawarma, Bamba…).</p>' +
     '<input type="text" id="jText" placeholder="Ex. 1 pita au blé complet" enterkeyhint="done"><div class="addrow"><input type="number" id="jKcal" inputmode="numeric" placeholder="kcal (facultatif)"><button class="btn primary" data-act="jAdd">Ajouter</button></div>' +
     (j.length ? '<ul class="list">' + j.map((x, i) => '<li class="item" style="background:var(--card2)"><div class="ttext" style="padding:10px 12px"><span>' + esc(x.h + ' · ' + x.t) + '</span>' + (x.detail ? '<small class="tag">' + esc(x.detail) + '</small>' : '') + '</div><b style="white-space:nowrap">' + (x.kcal ? (x.est ? '≈ ' : '') + fmtN(x.kcal) + ' kcal' : '? kcal') + '</b><button class="icon" data-act="jDel" data-i="' + i + '" aria-label="Supprimer">' + I.trash + '</button></li>').join('') + '</ul>' : '') + '</div>';
@@ -1539,6 +1542,44 @@ async function renderPhotos() {
     : '<p class="small muted">Aucune photo pour l’instant.</p>';
   el.innerHTML = h;
 }
+/* Photo du plat -> Claude (gratuit, avec l'abonnement Claude) */
+const PLAT_PROMPT = 'Estime les calories de ce plat (portions et produits courants en Israël). Réponds d’abord en une ligne : « Nom du plat — environ X kcal », puis donne le détail par aliment en quelques lignes.';
+let platFile = null, platUrl = null;
+function platKcalSheet() {
+  sheet({ title: 'Calories du plat', fields: [
+    { type: 'text', label: 'Nom du plat (comme Claude l’a écrit)', value: '', placeholder: 'Ex. Shawarma en pita' },
+    { type: 'number', label: 'Calories données par Claude (kcal)', value: '', placeholder: 'Ex. 650', required: true }],
+    onSave: ([t, k]) => { const kc = Math.round(num(k) || 0); if (!kc) return;
+      const r = wd(todayStr()); (r.journal = r.journal || []).push({ h: pad(now().getHours()) + ':' + pad(now().getMinutes()), t: t || 'Plat en photo', kcal: kc, est: true, detail: 'Estimé par Claude à partir de la photo' });
+      toast('Ajouté · ≈ ' + kc + ' kcal'); } });
+}
+function platDialog() {
+  const d = $('#dlg'), canShare = !!(navigator.canShare && platFile && navigator.canShare({ files: [platFile] }));
+  d.innerHTML = '<div class="sheet"><h2 style="margin:0">📸 Envoyer à Claude</h2>' +
+    (platUrl ? '<img src="' + platUrl + '" alt="Ton plat" style="width:100%;max-height:220px;object-fit:cover;border-radius:16px">' : '') +
+    (canShare
+      ? '<p class="small">1. Touche « Envoyer à Claude », puis choisis <b>Claude</b> dans la liste.<br>2. La question est déjà écrite (elle est aussi copiée, colle-la si elle n’apparaît pas). Envoie.<br>3. Reviens ici et entre les calories.</p><button class="btn primary block" data-p="share">Envoyer à Claude</button>'
+      : '<p class="small">Ton téléphone ne permet pas d’envoyer la photo directement. Ouvre Claude, prends ton plat en photo avec le bouton +, colle la question (elle est copiée) et envoie. Puis reviens ici.</p><a class="btn primary block" href="https://claude.ai/new" target="_blank" rel="noopener" data-p="open">Ouvrir Claude</a>') +
+    '<button class="btn block" data-p="kcal">J’ai la réponse : entrer les calories</button><button class="btn ghost block" data-p="close">Fermer</button></div>';
+  d.onclick = async e => {
+    const b = e.target.closest('[data-p]'); if (!b) return;
+    const a = b.dataset.p;
+    if (a === 'share') { try { await navigator.share({ files: [platFile], text: PLAT_PROMPT, title: 'Calories de mon plat' }); } catch (er) { } return; }
+    if (a === 'open') return;
+    d.close(); d.onclick = null;
+    if (a === 'kcal') platKcalSheet();
+  };
+  d.showModal();
+}
+document.addEventListener('change', async e => {
+  if (e.target.id !== 'platFile') return;
+  const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
+  let b; try { b = await shrink(f); } catch (er) { b = f; }
+  platFile = new File([b], 'mon-plat.jpg', { type: 'image/jpeg' });
+  if (platUrl) URL.revokeObjectURL(platUrl); platUrl = URL.createObjectURL(platFile);
+  try { await navigator.clipboard.writeText(PLAT_PROMPT); } catch (er) { }
+  platDialog();
+});
 document.addEventListener('change', async e => {
   if (e.target.id !== 'wPhotoFile') return;
   const f = e.target.files && e.target.files[0]; if (!f) return;
@@ -2249,6 +2290,7 @@ const ACTS = {
     $('#jText').value = ''; $('#jKcal').value = '';
     toast(e.kcal ? 'Noté · ' + (e.est ? '≈ ' : '') + e.kcal + ' kcal' : 'Noté');
   },
+  platKcal: () => platKcalSheet(),
   jDel: el => { const r = wd(todayStr()); r.journal.splice(+el.dataset.i, 1); },
   cup: el => { const r = wd(todayStr()), n = +el.dataset.n, before = cups(todayStr()); r.verres = before === n ? n - 1 : n; if (before < CUPS && r.verres >= CUPS) toast('✓ 2 litres bus, bien joué'); },
   cupAdd: el => { const r = wd(todayStr()), before = cups(todayStr()); r.verres = Math.max(0, Math.min(20, before + +el.dataset.n)); if (before < CUPS && r.verres >= CUPS) toast('✓ 2 litres bus, bien joué'); },
