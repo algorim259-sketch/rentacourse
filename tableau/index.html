@@ -568,10 +568,10 @@ function defaultState() {
       { id: 'rentacourse', name: 'RentaCourse', steps: SEED_GOALS.rentacourse.map(([text, l, d]) => ({ id: uid(), text, len: l === 'l' ? 'long' : 'court', done: !!d })) },
       { id: 'dofus', name: 'Serveur Dofus', steps: SEED_GOALS.dofus.map(([text, l, d]) => ({ id: uid(), text, len: l === 'l' ? 'long' : 'court', done: !!d })) }
     ],
-    habits: [{ id: uid(), name: 'Prière du matin' }, { id: uid(), name: '20 pompes', kind: 'pompes', goal: 20 }, { id: uid(), name: 'Moment avec les enfants', kind: 'enfants' }],
+    habits: [{ id: uid(), name: 'Prière du matin' }, { id: uid(), name: '20 pompes', kind: 'pompes', goal: 20 }, { id: uid(), name: '20 abdos', kind: 'abdos', goal: 20 }, { id: uid(), name: 'Moment avec les enfants', kind: 'enfants' }],
     counts: {}, fam: { days: {}, weeks: {}, months: {} }, kids: ['', ''],
     habitLog: {}, ideas: {}, generated: {}, dayOverrides: {}, recent: {},
-    settings: { night: 'auto', tab: 'jour' }, lastExport: null,
+    settings: { night: 'auto', tab: 'jour', abdosAdded: true }, lastExport: null,
     earnings: {}, sleep: {}, sport: {}, wdaily: {}, wweeks: {}, wphoto: {}, wprof: { taille: 186, age: 31, act: 1.5, deficit: 700, stepGoal: 10000, trStart: null, trPhase: null }, platforms: DEFAULT_PLATFORMS.map(x => ({ ...x })), skill: { start: null, offset: 0, done: {} }
   };
 }
@@ -602,6 +602,11 @@ function normalize(o) {
     if (h.kind) continue;
     if (/pompe/i.test(h.name)) { h.kind = 'pompes'; h.goal = +((h.name.match(/\d+/) || [20])[0]) || 20; }
     else if (/enfant/i.test(h.name)) h.kind = 'enfants';
+    else if (/abdo/i.test(h.name)) { h.kind = 'abdos'; h.goal = +((h.name.match(/\d+/) || [20])[0]) || 20; }
+  }
+  if (!s.settings.abdosAdded) {
+    s.settings.abdosAdded = true;
+    if (!s.habits.some(h => h.kind === 'abdos')) { const i = s.habits.findIndex(h => h.kind === 'pompes'); s.habits.splice(i >= 0 ? i + 1 : s.habits.length, 0, { id: uid(), name: '20 abdos', kind: 'abdos', goal: 20 }); }
   }
   return s;
 }
@@ -853,7 +858,7 @@ function heroFor(tab, today) {
     const hb = state.habits.find(x => x.kind === 'pompes'), c = hb ? countOf(today, hb.id) : 0, g = hb ? hb.goal : 20;
     const wk = []; for (let d = sundayOf(today); d <= today; d = addDays(d, 1)) wk.push(...(state.sport[d] || []));
     return hero({ cls: 'sport', title: '💪 Sport', badge: '<br><span class="badge">' + (TR_DAYS.includes(wday(today)) ? 'Séance tractions aujourd’hui' : 'Repos tractions aujourd’hui') + '</span>', p: c / g, ptxt: c + '/' + g,
-      big: 'Pompes : ' + c + ' / ' + g, line: '👟 ' + fmtN(stepsOf(today)) + ' pas · ' + wk.reduce((a, x) => a + (+x.min || 0), 0) + ' min de sport cette semaine', msg: c >= g ? 'Objectif pompes atteint.' : '' });
+      big: 'Pompes : ' + c + ' / ' + g, msg2: '', line: (() => { const ha = state.habits.find(x => x.kind === 'abdos'); return ha ? '🔥 Abdos : ' + countOf(today, ha.id) + ' / ' + ha.goal + ' · ' : ''; })() + '👟 ' + fmtN(stepsOf(today)) + ' pas · ' + wk.reduce((a, x) => a + (+x.min || 0), 0) + ' min de sport cette semaine', msg: c >= g ? 'Objectif pompes atteint.' : '' });
   }
   if (tab === 'enfants') {
     const { n, t, p } = famPct(today), th = famTheme(today), st = famStreak(today);
@@ -1159,20 +1164,48 @@ function sportSheet(date, item) {
     extra: item ? [{ label: 'Supprimer l’activité', cls: 'danger', fn: () => { state.sport[date] = state.sport[date].filter(x => x.id !== item.id); } }] : []
   });
 }
+/* Abdos : toujours 20, mais de plus en plus durs */
+const ABDO_LEVELS = [
+  ['Crunch facile', 'Allongé sur le dos, genoux pliés, pieds au sol, bras le long du corps. Décolle seulement les épaules du sol en soufflant, puis redescends doucement.'],
+  ['Crunch mains derrière la tête', 'Même mouvement, mains derrière la tête, coudes ouverts. Ne tire pas sur la nuque : c’est le ventre qui travaille.'],
+  ['Crunch jambes levées', 'Jambes en l’air, genoux pliés à angle droit (comme sur une chaise). Décolle les épaules en gardant les jambes immobiles.'],
+  ['Relevé de genoux allongé', 'Sur le dos, mains au sol près des fesses. Ramène les genoux vers la poitrine en décollant un peu le bassin, puis redescends lentement.'],
+  ['Crunch vélo', 'Mains derrière la tête : coude droit vers genou gauche, puis coude gauche vers genou droit, en pédalant. Chaque côté compte pour 1.'],
+  ['Relevé de jambes tendues', 'Sur le dos, jambes tendues, mains sous les fesses. Monte les jambes à la verticale, redescends lentement sans toucher le sol. Bas du dos collé au sol.'],
+  ['Crunch en V', 'Sur le dos, bras tendus derrière la tête. Monte en même temps le buste et les jambes tendues, touche tes pieds, redescends lentement.']
+];
+const ABDO_NEXT = 10; // jours réussis avant de proposer le niveau suivant
+function abdoState(today) { const a = state.abdo = state.abdo || { level: 0, since: today }; if (!a.since) a.since = today; return a; }
+function abdoDaysAtLevel(ha, today) { const a = abdoState(today); let n = 0; for (let d = a.since; d <= today; d = addDays(d, 1)) if (isDone(d, ha.id)) n++; return n; }
+function abdoLevelHTML(ha, today) {
+  const a = abdoState(today), lv = ABDO_LEVELS[a.level], n = abdoDaysAtLevel(ha, today), last = a.level === ABDO_LEVELS.length - 1;
+  return '<div class="rule" style="border:0;padding:0"><div class="monthnav"><button class="icon" data-act="abdoLevel" data-n="-1"' + (a.level === 0 ? ' disabled' : '') + ' aria-label="Niveau plus facile">‹</button>' +
+    '<div style="text-align:center"><span class="theme">Niveau ' + (a.level + 1) + ' sur ' + ABDO_LEVELS.length + '</span><br><b>' + lv[0] + '</b></div>' +
+    '<button class="icon" data-act="abdoLevel" data-n="1"' + (last ? ' disabled' : '') + ' aria-label="Niveau plus dur">›</button></div>' +
+    '<p class="small" style="margin-top:8px">' + lv[1] + '</p>' +
+    '<p class="small muted" style="margin-top:6px">Environ 2 minutes. Fais-les en 1, 2 ou 4 séries, comme tu veux. Mouvement lent, et tu souffles en montant.</p>' +
+    (last ? '<p class="small ok-t" style="margin-top:6px"><b>Dernier niveau. Bravo.</b></p>'
+      : n >= ABDO_NEXT ? '<div class="card stack" style="background:var(--accent-soft);box-shadow:none;margin-top:8px"><p><b>🎉 ' + n + ' jours réussis à ce niveau.</b> Si c’est devenu facile, passe au suivant : <b>' + ABDO_LEVELS[a.level + 1][0] + '</b>.</p><button class="btn primary block" data-act="abdoLevel" data-n="1">Passer au niveau ' + (a.level + 2) + '</button></div>'
+      : '<p class="small muted" style="margin-top:6px">' + n + ' / ' + ABDO_NEXT + ' jours réussis à ce niveau avant de proposer le suivant.</p>') + '</div>';
+}
+function counterCard(hb, today, extra) {
+  const cnt = countOf(today, hb.id), s = streak(hb.id, today);
+  let h = '<div class="card stack"><div class="goalhead"><h3>' + (hb.kind === 'abdos' ? '🔥 ' : '💪 ') + esc(hb.name) + '</h3><span class="muted small">' + (s ? 'série : ' + s + ' j' : '') + '</span></div>' + extra +
+    '<p class="bignum">' + cnt + ' <span class="muted" style="font-size:20px">/ ' + hb.goal + '</span>' + (cnt >= hb.goal ? ' <span class="ok-t" style="font-size:20px">✓</span>' : '') + '</p>' +
+    '<div class="bar"><i style="width:' + Math.min(100, Math.round(cnt / hb.goal * 100)) + '%"></i></div>' +
+    '<div class="counter" style="padding:0">' + [1, 5, 10, 20].map(n => '<button data-act="addCount" data-id="' + hb.id + '" data-n="' + n + '">+' + n + '</button>').join('') +
+    '<button data-act="addCount" data-id="' + hb.id + '" data-n="-1" aria-label="Retirer 1">−1</button></div>';
+  const days = [6, 5, 4, 3, 2, 1, 0].map(i => addDays(today, -i));
+  h += '<div class="sbars" style="height:110px" aria-hidden="true">' + days.map(d => { const c = countOf(d, hb.id) || (isDone(d, hb.id) ? hb.goal : 0);
+    return '<div><b>' + (c || '') + '</b><i class="' + (c ? (c >= hb.goal ? '' : 'warn') : 'none') + '" style="height:' + (c ? Math.round(Math.min(c, hb.goal * 1.5) / (hb.goal * 1.5) * 70) : 3) + 'px"></i><span>' + dayName(d).slice(0, 3) + '</span></div>'; }).join('') + '</div></div>';
+  return h;
+}
 function sportHTML(today) {
   let h = '<section id="sport"><div class="stack">';
   const hb = state.habits.find(x => x.kind === 'pompes');
-  if (hb) {
-    const cnt = countOf(today, hb.id), s = streak(hb.id, today);
-    h += '<div class="card stack"><div class="goalhead"><h3>' + esc(hb.name) + '</h3><span class="muted small">' + (s ? 'série : ' + s + ' j' : '') + '</span></div>' +
-      '<p class="bignum">' + cnt + ' <span class="muted" style="font-size:20px">/ ' + hb.goal + '</span>' + (cnt >= hb.goal ? ' <span class="ok-t" style="font-size:20px">✓</span>' : '') + '</p>' +
-      '<div class="bar"><i style="width:' + Math.min(100, Math.round(cnt / hb.goal * 100)) + '%"></i></div>' +
-      '<div class="counter" style="padding:0">' + [1, 5, 10, 20].map(n => '<button data-act="addCount" data-id="' + hb.id + '" data-n="' + n + '">+' + n + '</button>').join('') +
-      '<button data-act="addCount" data-id="' + hb.id + '" data-n="-1" aria-label="Retirer 1">−1</button></div>';
-    const days = [6, 5, 4, 3, 2, 1, 0].map(i => addDays(today, -i));
-    h += '<div class="sbars" style="height:110px" aria-hidden="true">' + days.map(d => { const c = countOf(d, hb.id) || (isDone(d, hb.id) ? hb.goal : 0);
-      return '<div><b>' + (c || '') + '</b><i class="' + (c ? (c >= hb.goal ? '' : 'warn') : 'none') + '" style="height:' + (c ? Math.round(Math.min(c, hb.goal * 1.5) / (hb.goal * 1.5) * 70) : 3) + 'px"></i><span>' + dayName(d).slice(0, 3) + '</span></div>'; }).join('') + '</div></div>';
-  }
+  if (hb) h += counterCard(hb, today, '');
+  const ha = state.habits.find(x => x.kind === 'abdos');
+  if (ha) h += counterCard(ha, today, abdoLevelHTML(ha, today));
   const ideas = state.ideas[today] || {};
   h += tractionsHTML(today) + stepsHTML(today) + floorsHTML(today);
   if (ideas.sport) h += ideaCard('sport', ideas.sport);
@@ -2291,6 +2324,7 @@ const ACTS = {
     toast(e.kcal ? 'Noté · ' + (e.est ? '≈ ' : '') + e.kcal + ' kcal' : 'Noté');
   },
   platKcal: () => platKcalSheet(),
+  abdoLevel: el => { const a = abdoState(todayStr()); const l = Math.max(0, Math.min(ABDO_LEVELS.length - 1, a.level + +el.dataset.n)); if (l !== a.level) { a.level = l; a.since = todayStr(); toast('Niveau ' + (l + 1) + ' : ' + ABDO_LEVELS[l][0]); } },
   jDel: el => { const r = wd(todayStr()); r.journal.splice(+el.dataset.i, 1); },
   cup: el => { const r = wd(todayStr()), n = +el.dataset.n, before = cups(todayStr()); r.verres = before === n ? n - 1 : n; if (before < CUPS && r.verres >= CUPS) toast('✓ 2 litres bus, bien joué'); },
   cupAdd: el => { const r = wd(todayStr()), before = cups(todayStr()); r.verres = Math.max(0, Math.min(20, before + +el.dataset.n)); if (before < CUPS && r.verres >= CUPS) toast('✓ 2 litres bus, bien joué'); },
